@@ -1,0 +1,17 @@
+project:
+  name: Task-Aware-TransNAS
+  seed: 42
+  formal_training_enabled: false
+
+model:
+  env_var: MODEL_DIR
+  local_files_only: true
+  trust_remote_code: false
+  torch_dtype: bfloat16
+
+continual_learning:
+  replay_capacity: 2000
+
+nas:
+  objective: task_aware_validation_score
+  search_space_module: task_aware_transnas.nas.search_space

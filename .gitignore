@@ -1,0 +1,26 @@
+# Local environment and machine-specific configuration
+conda-env/
+.venv/
+.env
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local data, checkpoints, and generated runs
+data/raw/**
+data/processed/**
+data/replay/**
+artifacts/checkpoints/**
+artifacts/nas_runs/**
+logs/**
+
+# Keep empty project directories
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/replay/.gitkeep
+!artifacts/checkpoints/.gitkeep
+!artifacts/nas_runs/.gitkeep
+!logs/.gitkeep
