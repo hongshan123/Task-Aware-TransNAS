@@ -8,6 +8,7 @@ No reference model or replay example is used by these modules.
 from __future__ import annotations
 
 import math
+import random
 from dataclasses import dataclass
 from typing import Any
 
@@ -298,3 +299,16 @@ def phase6b_added_parameter_count(
     if architecture in {"B2-input", "B3-oracle", "B2-random-location"}:
         return branch_params + layer_count * (hidden_size * num_experts + num_experts)
     raise ValueError(f"Unknown Phase 6B architecture: {architecture}")
+
+
+def select_random_post_layers(
+    candidate_layers: list[int],
+    count: int,
+    seed: int,
+    excluded_layers: list[int],
+) -> list[int]:
+    """Select a reproducible post-layer control set while excluding target layers."""
+    candidates = sorted(set(int(layer) for layer in candidate_layers) - set(int(layer) for layer in excluded_layers))
+    if count < 1 or count > len(candidates):
+        raise ValueError(f"Cannot sample {count} layers from {candidates}")
+    return sorted(random.Random(int(seed)).sample(candidates, int(count)))

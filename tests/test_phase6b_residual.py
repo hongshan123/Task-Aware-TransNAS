@@ -10,6 +10,7 @@ from scripts.phase6b_modules import (
     ConditionalResidualRouter,
     install_residual_paths,
     phase6b_added_parameter_count,
+    select_random_post_layers,
 )
 
 
@@ -58,6 +59,13 @@ class Phase6BResidualTests(unittest.TestCase):
         self.assertEqual(b2, b3)
         self.assertLess((b2 - b1) / b1, 0.01)
         self.assertLess(b2 / base_parameters, 0.01)
+
+    def test_random_post_layer_control_is_reproducible_and_excludes_primary_layers(self):
+        candidates = [20, 21, 22, 23, 24, 26]
+        selected = select_random_post_layers(candidates, 2, 20261010, [25, 27])
+        self.assertEqual(selected, [21, 22])
+        self.assertEqual(selected, select_random_post_layers(candidates, 2, 20261010, [25, 27]))
+        self.assertFalse(set(selected) & {25, 27})
 
     def test_input_router_selects_different_experts_for_different_hidden_states(self):
         torch.manual_seed(17)

@@ -38,6 +38,7 @@ from phase6b_modules import (
     ResidualPathController,
     install_residual_paths,
     phase6b_added_parameter_count,
+    select_random_post_layers,
 )
 from run_formal_baseline import load_model, safe_prompt
 from run_phase4b_comparison import SEQUENCES, TASK_CALIBRATED_STEPS, summarize_predictions
@@ -47,7 +48,6 @@ from task_aware_transnas.cl.metrics import continual_learning_metrics
 OUT = ROOT / "results" / "phase6b"
 ARCHITECTURES = ("B1-static", "B2-input", "B3-oracle", "B2-random-location")
 PRIMARY_LAYERS = [25, 27]
-RANDOM_LOCATION_LAYERS = [21, 22]
 BOTTLENECK_PER_EXPERT = 64
 NUM_EXPERTS = 4
 MAX_NEW_TOKENS = 64
@@ -274,7 +274,15 @@ def run_variant(
     run_started_utc = datetime.now(timezone.utc)
     torch.manual_seed(10)
     model = load_model(model_path, local_only=True, training=True)
-    location = PRIMARY_LAYERS if architecture != "B2-random-location" else RANDOM_LOCATION_LAYERS
+    if architecture == "B2-random-location":
+        location = select_random_post_layers(
+            list(config["architecture"]["random_location_candidate_layers"]),
+            len(PRIMARY_LAYERS),
+            int(config["architecture"]["random_location_selection_seed"]),
+            PRIMARY_LAYERS,
+        )
+    else:
+        location = PRIMARY_LAYERS
     controller = install_residual_paths(
         model,
         architecture,
@@ -528,6 +536,8 @@ def run_variant(
         "architecture_definition": {
             "variant": architecture,
             "layers_zero_based": location,
+            "random_location_candidate_layers": config["architecture"].get("random_location_candidate_layers") if architecture == "B2-random-location" else None,
+            "random_location_selection_seed": config["architecture"].get("random_location_selection_seed") if architecture == "B2-random-location" else None,
             "bottleneck_size_per_routed_path": BOTTLENECK_PER_EXPERT,
             "number_of_fixed_shared_routes": NUM_EXPERTS,
             "route_policy_during_training": {task: training_metrics[task]["route_policy"] for task in sequence},
@@ -628,6 +638,18 @@ def main() -> None:
     torch.cuda.set_device(device)
     if config["training"]["steps_per_task"] != 50 or config["training"]["learning_rate"] != 1e-5:
         raise RuntimeError("The Phase 6B pilot expects the frozen Phase 4B training configuration")
+    sampled_random_layers = select_random_post_layers(
+        list(config["architecture"]["random_location_candidate_layers"]),
+        len(PRIMARY_LAYERS),
+        int(config["architecture"]["random_location_selection_seed"]),
+        PRIMARY_LAYERS,
+    )
+    declared_random_layers = sorted(int(layer) for layer in config["architecture"]["random_location_layers"])
+    if sampled_random_layers != declared_random_layers:
+        raise RuntimeError(
+            f"Random location layers do not match seed-based selection: "
+            f"sampled={sampled_random_layers}; declared={declared_random_layers}"
+        )
     disk = _disk_preflight(model_path)
     write_json(OUT / "disk_preflight.json", disk)
     if args.preflight_only:
