@@ -26,3 +26,15 @@ checkpoints/
 !artifacts/checkpoints/.gitkeep
 !artifacts/nas_runs/.gitkeep
 !logs/.gitkeep
+
+# Keep bounded Phase 6B aggregate outputs with the reports; raw runs and checkpoints stay local.
+!results/
+results/*
+!results/phase6b/
+results/phase6b/*
+!results/phase6b/compatibility_matrices.csv
+!results/phase6b/gpu_smoke.json
+!results/phase6b/pilot_summary.json
+!results/phase6b/pilot_task_metrics.csv
+!results/phase6b/pilot_resource_summary.csv
+!results/phase6b/task_similarity_gradient_matrix.csv

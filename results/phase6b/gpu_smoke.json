@@ -1,0 +1,223 @@
+{
+  "status": "passed",
+  "architecture": "B2-input",
+  "task_id": "task565_circa_answer_generation",
+  "diagnostic_optimizer_steps": 2,
+  "formal_pilot_steps_included": false,
+  "test_split_loaded": false,
+  "historical_model_loaded": false,
+  "initial_max_logit_difference": 0.0,
+  "route_does_not_use_task_id": true,
+  "training_route_statistics": {
+    "25": {
+      "router_kind": "input_hidden_state",
+      "policy": "input_train",
+      "task_id_used_by_router": false,
+      "expert_token_counts": [
+        326,
+        19,
+        20,
+        289
+      ],
+      "expert_token_shares": [
+        0.4984709480122324,
+        0.0290519877675841,
+        0.03058103975535168,
+        0.4418960244648318
+      ],
+      "normalized_route_entropy": 0.6617507176609658,
+      "active_experts": 4,
+      "forward_calls": 8,
+      "branch_rms_last_forward": 0.004146278370171785
+    },
+    "27": {
+      "router_kind": "input_hidden_state",
+      "policy": "input_train",
+      "task_id_used_by_router": false,
+      "expert_token_counts": [
+        143,
+        384,
+        45,
+        82
+      ],
+      "expert_token_shares": [
+        0.21865443425076453,
+        0.5871559633027523,
+        0.06880733944954129,
+        0.12538226299694188
+      ],
+      "normalized_route_entropy": 0.7859466121758365,
+      "active_experts": 4,
+      "forward_calls": 8,
+      "branch_rms_last_forward": 0.0015516129788011312
+    }
+  },
+  "gradient_trace": [
+    {
+      "step": 1,
+      "paths": {
+        "25": {
+          "branch_expert_gradients": [
+            {
+              "gradient_l2": 0.015101559243668088,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.003495791259158505,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.0034542473422737646,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.008223621167098913,
+              "has_gradient": true
+            }
+          ],
+          "router_gradient_l2": 0.0,
+          "router_has_gradient": true,
+          "branch_rms": 0.0
+        },
+        "27": {
+          "branch_expert_gradients": [
+            {
+              "gradient_l2": 0.004963803817578394,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.004371653676644277,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.005547225026676905,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.0025014710071279483,
+              "has_gradient": true
+            }
+          ],
+          "router_gradient_l2": 0.0,
+          "router_has_gradient": true,
+          "branch_rms": 0.0
+        }
+      }
+    },
+    {
+      "step": 2,
+      "paths": {
+        "25": {
+          "branch_expert_gradients": [
+            {
+              "gradient_l2": 0.01709606467664225,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.0005417011117072124,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.0059519122420633825,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.013007792711166363,
+              "has_gradient": true
+            }
+          ],
+          "router_gradient_l2": 0.00021872129918082544,
+          "router_has_gradient": true,
+          "branch_rms": 0.004146278370171785
+        },
+        "27": {
+          "branch_expert_gradients": [
+            {
+              "gradient_l2": 0.009800343289955389,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.001481367812637847,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.003863664409994638,
+              "has_gradient": true
+            },
+            {
+              "gradient_l2": 0.005024802763973405,
+              "has_gradient": true
+            }
+          ],
+          "router_gradient_l2": 4.1107952273079914e-05,
+          "router_has_gradient": true,
+          "branch_rms": 0.0015516129788011312
+        }
+      }
+    }
+  ],
+  "branch_parameters_updated": true,
+  "branch_gradient_present": true,
+  "router_gradient_present": true,
+  "evaluation_route_statistics": {
+    "25": {
+      "router_kind": "input_hidden_state",
+      "policy": "input",
+      "task_id_used_by_router": false,
+      "expert_token_counts": [
+        39,
+        1,
+        1,
+        34
+      ],
+      "expert_token_shares": [
+        0.52,
+        0.013333333333333334,
+        0.013333333333333334,
+        0.4533333333333333
+      ],
+      "normalized_route_entropy": 0.5870465243270123,
+      "active_experts": 4,
+      "forward_calls": 1,
+      "branch_rms_last_forward": 0.007480978034436703
+    },
+    "27": {
+      "router_kind": "input_hidden_state",
+      "policy": "input",
+      "task_id_used_by_router": false,
+      "expert_token_counts": [
+        18,
+        46,
+        4,
+        7
+      ],
+      "expert_token_shares": [
+        0.24,
+        0.6133333333333333,
+        0.05333333333333334,
+        0.09333333333333334
+      ],
+      "normalized_route_entropy": 0.7357827821880242,
+      "active_experts": 4,
+      "forward_calls": 1,
+      "branch_rms_last_forward": 0.002755287801846862
+    }
+  },
+  "checkpoint_state_bytes": 2388464720,
+  "checkpoint_reload_max_logit_difference": 0.0,
+  "checkpoint_restore_keys": {
+    "missing_tied_keys": [
+      "lm_head.weight"
+    ],
+    "unexpected_keys": []
+  },
+  "training_metrics": {
+    "optimizer_steps": 2,
+    "sample_order_sha256": "4873237c1ce2c075dbf3be508693827a4684ddc201c647790ba1f355b7ee867a",
+    "supervised_target_tokens": 71,
+    "peak_cuda_allocated_bytes": 10905494528,
+    "duration_seconds": 1.7370915999999852
+  },
+  "peak_cuda_allocated_bytes": 10905494528,
+  "gpu_name": "NVIDIA GeForce RTX 4090"
+}
