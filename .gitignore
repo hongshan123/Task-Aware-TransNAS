@@ -16,6 +16,8 @@ data/replay/**
 artifacts/checkpoints/**
 artifacts/nas_runs/**
 logs/**
+results/
+checkpoints/
 
 # Keep empty project directories
 !data/raw/.gitkeep

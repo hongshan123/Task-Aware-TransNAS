@@ -1,0 +1,124 @@
+phase: 5B
+name: function_vector_recovery_verification
+seed: 314159
+
+model:
+  source: MODEL_DIR
+  local_files_only: true
+  architecture: Qwen3-0.6B
+  required_geometry:
+    layers: 28
+    query_heads: 16
+    key_value_heads: 8
+    head_dim: 128
+    hidden_size: 1024
+
+historical_boundary_replay:
+  architecture: A0
+  sequence: S1
+  run_seed: 10
+  task_order:
+    - task565_circa_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1501_dstc3_answer_generation
+    - task1384_deal_or_no_dialog_classification
+  optimizer_steps:
+    task565_circa_answer_generation: 50
+    task1603_smcalflow_sentence_generation: 250
+    task1501_dstc3_answer_generation: 50
+    task1384_deal_or_no_dialog_classification: 50
+  save_boundaries_after:
+    - task565_circa_answer_generation
+    - task1603_smcalflow_sentence_generation
+  output_root: results/phase5b/checkpoints/historical_boundary_replay/A0/S1/seed_10
+  verify_against_completed_phase4b_run: results/phase4b/runs/A0/S1/seed_10/metrics.json
+  final_checkpoint_for_weight_comparison: results/phase4b/checkpoints/A0/S1/seed_10/model.safetensors
+
+data:
+  train_demonstrations_only: true
+  build_dev_indices: [0, 9]
+  tune_dev_indices: [10, 24]
+  locked_evaluation_dev_indices: [25, 49]
+  examples_per_locked_task: 25
+  test_split_read: false
+  icl_shots: 4
+
+function_vectors:
+  top_k_query_heads: 10
+  query_head_count: 448
+  extraction_prompts_per_task: 10
+  intervention_layers_zero_based: [5, 12, 19, 26]
+  intervention_scales: [0.25, 0.5, 1.0, 2.0]
+  interventions_apply_at:
+    module: selected_decoder_layer.self_attn.o_proj.output.additive_v1
+    teacher_forced: suffix_from_prompt_final_position
+    cached_generation: last_attention_output_position_each_decode_step
+
+intervention_protocol:
+  evaluation_tasks: all_four_formal_tasks
+  tuning:
+    split: dev
+    indices_zero_based_inclusive: [10, 24]
+    examples_per_task: 15
+    objective: token_weighted_teacher_forced_reference_nll
+    layers_zero_based: [5, 12, 19, 26]
+    scales: [0.25, 0.5, 1.0, 2.0]
+  locked_evaluation:
+    split: dev
+    indices_zero_based_inclusive: [25, 49]
+    examples_per_task: 25
+    generation_max_new_tokens: 64
+    generation_strategy: greedy
+  vector_condition_mapping:
+    historical_task_boundary_fv:
+      own_task_vectors_available_for:
+        - task565_circa_answer_generation
+        - task1603_smcalflow_sentence_generation
+    final_collapsed_checkpoint_fv: same_task_vector_from_phase5_phase4b_A0_S1_seed10
+    norm_matched_random_fv: seeded_random_vector_with_reference_vector_l2_norm
+    unrelated_historical_task_fv:
+      swap_generation_vectors_between_task565_and_task1603: true
+      other_tasks_use: task565_historical_vector
+    subtract_latest_classifier_fv: negative_task1384_final_collapsed_vector
+  controls:
+    explicit_format_hint: Return only the requested answer text. Do not add an explanation, preamble, label, quotation marks, or confidence statement.
+    correct_four_shot_icl:
+      shots: 4
+      support_source: train_only
+      preserve_correct_labels: true
+      truncate_only_query_or_demo_inputs_if_needed: true
+  paired_bootstrap:
+    repeats: 5000
+    interval: percentile_95
+    unit: locked_evaluation_instance
+
+recovery_conditions:
+  - baseline
+  - historical_task_boundary_fv
+  - final_collapsed_checkpoint_fv
+  - norm_matched_random_fv
+  - unrelated_historical_task_fv
+  - subtract_latest_classifier_fv
+  - explicit_format_hint
+  - correct_four_shot_icl
+
+head_similarity:
+  permutation_repeats: 10000
+  random_seed: 314159
+  top_k: [5, 10, 20, 50]
+  use_all_448_query_heads: true
+  permutation_null: independently_permute_head_identity_for_one_task
+  adjust_pairwise_p_values: benjamini_hochberg_within_statistic_across_six_task_pairs
+
+generation:
+  max_new_tokens: 64
+  greedy: true
+  explicit_format_hint: Return only the requested answer text. Do not add an explanation, preamble, label, quotation marks, or confidence statement.
+  generated_length_includes_eos: true
+
+output_metric_definitions:
+  exact_yes_rate: casefolded_trimmed_output_equals_yes
+  exact_no_rate: casefolded_trimmed_output_equals_no
+  exact_yes_no_rate: exact_yes_count_plus_exact_no_count_over_all_outputs
+  most_common_label_concentration: largest_unambiguous_parsed_label_count_over_parseable_outputs
+  invalid_answer_format_rate: outputs_for_which_existing_unambiguous_yes_no_parser_returns_none_over_all_outputs

@@ -1,38 +1,28 @@
 # Environment Report — Task-Aware-TransNAS
 
 **Date:** 2026-10-09  
-**Status:** Ready for local CUDA inference; formal training has not been started.
+**Status:** Windows CUDA environment, local-model inference, deterministic CITB preparation, one-task smoke run, and bounded four-task pilot completed.
 
 ## Machine and storage
 
 | Check | Result |
 |---|---|
-| OS / architecture | Windows, win32, 64-bit Python |
+| OS / architecture | Windows, 64-bit Python |
 | GPU | NVIDIA GeForce RTX 4090 |
-| GPU memory | 24,564 MiB reported (23.99 GiB) |
-| NVIDIA driver | 610.60; `nvidia-smi` reports CUDA UMD 13.3 |
-| Installed CUDA Toolkit | 12.1 (`nvcc`) |
-| PyTorch CUDA runtime | 13.2, bundled with the PyTorch wheel |
-| C: free space after setup | 41,591,533,568 bytes (about 38.74 GiB) |
-| D: free space after setup | 201,848,094,720 bytes (about 187.99 GiB) |
+| GPU memory | 24,564 MiB (about 24 GiB) |
+| Driver | 610.60; nvidia-smi reported CUDA UMD 13.3 |
+| Installed CUDA Toolkit | 12.1; PyTorch uses its bundled CUDA 13.2 runtime |
+| Python | 3.11.2, project-local Conda prefix conda-env/ |
+| D: free space after data and checkpoints | 180,783,091,712 bytes (about 168.4 GiB) |
+| GPU after pilot process exited | 1,614 MiB reported in use by desktop/other processes |
 
-PyTorch reports CUDA available and identifies the RTX 4090 with compute capability 8.9. The locally installed CUDA Toolkit is not used by this PyTorch wheel; no system-level CUDA changes or administrator access were needed.
+The CUDA wheel recognized the RTX 4090 (compute capability 8.9). No administrator access or system CUDA changes were required. All experiment data, caches, logs, results, and checkpoints were directed to D:/Task-Aware-TransNAS. Project-root results and checkpoints are Windows directory junctions to those D: directories.
 
-## Local model
+## Python packages
 
-- Project setting: `.env` sets `MODEL_DIR=../model/qwen3-0.6b` relative to the project root.
-- Resolved model path: `C:\Users\Lenovo\Desktop\nas-cl-transformer\model\qwen3-0.6b`.
-- Model files: 11 files, 1,519,209,873 bytes (about 1.415 GiB).
-- Required files present: `config.json`, `tokenizer.json`, and `model.safetensors`.
-- The shell environment did not expose a `MODEL_DIR` value during inspection; the project-local `.env` now supplies the path.
+The Windows x64 environment passed pip check with no broken requirements. Installed main versions:
 
-## Python environment and packages
-
-- Environment: project-local Conda prefix at `conda-env/`.
-- Python: 3.11.2, 64-bit; pip: 26.2.1.
-- Main packages:
-
-| Package | Installed version |
+| Package | Version |
 |---|---:|
 | PyTorch | 2.14.1+cu132 |
 | Transformers | 5.19.0 |
@@ -41,51 +31,35 @@ PyTorch reports CUDA available and identifies the RTX 4090 with compute capabili
 | TRL | 1.15.0 |
 | Evaluate | 0.4.6 |
 | PEFT | 0.21.2 |
-| Safetensors | 0.8.0 |
-| NumPy | 2.4.6 |
-| Pandas | 3.0.6 |
-| scikit-learn | 1.9.1 |
+| PyYAML | 6.0.3 |
+| python-dotenv | 1.2.4 |
 
-`pip check` passed with **no broken requirements**. The environment uses Windows wheels. Linux-only extensions such as FlashAttention were not installed.
+Windows-compatible wheels were used. No Linux-only extensions such as FlashAttention were installed.
 
-The installed project package imports successfully; `SearchSpace.validate()` and a basic replay-buffer insertion also passed.
+## Local model and CUDA validation
 
-Conda's configured default channel returned TLS connection errors. To keep setup moving without changing system configuration, Python 3.11.2 was linked from the machine's existing Conda package cache in offline mode; pip package installation then succeeded through the configured package index. Python 3.11.2 meets the requested minor version, but it is an older patch release. Once the Conda channel is reachable, consider rebuilding with a current Python 3.11 patch release and reinstalling from `requirements.txt`.
+- .env sets MODEL_DIR=../model/qwen3-0.6b relative to the project root. Resolved path: C:\Users\Lenovo\Desktop\nas-cl-transformer\model\qwen3-0.6b.
+- The local directory contains 11 model/tokenizer files, including config.json, tokenizer files, and model.safetensors. The model was only read; training checkpoints were written to D:.
+- The environment smoke inference passed with local_files_only=True and offline flags. It generated 32 tokens in 0.97 seconds; peak CUDA allocation was 1.12 GiB.
+- The continual runner also used local_files_only=True and HF offline flags; no model download was requested.
 
-## Offline CUDA inference
+## CITB baseline validation
 
-The smoke script set `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`, and both `from_pretrained` calls use `local_files_only=True` and `trust_remote_code=False`.
+The official CITB data from the authors' [repository](https://github.com/hyintell/CITB) is stored outside the project checkout at D:/Task-Aware-TransNAS/data/CITB-official. The selected stream order1 subset covers intent identification, dialogue generation, and dialogue state tracking. There are 1,558 train, 200 dev, and 200 test examples. Test/dev IDs are disjoint from each other and train IDs; the exact IDs, checksums, source commit, counts, and seed note are in reports/data_manifest.json.
 
-- Result: **PASS** (`SMOKE_TEST=PASS`).
-- Model: local Qwen3-0.6B; no model download was attempted.
-- Generation: 32 tokens in 0.97 seconds.
-- PyTorch peak allocated memory during generation: 1.12 GiB.
-- Free GPU memory after generation while the model remained loaded: 20.86 GiB.
-- After the smoke process exited, `nvidia-smi` reported 1,556 MiB in use by the desktop and other processes.
+Assistant-only labels, EOS, padding, and split disjointness were validated. The single-task smoke completed 20 full-parameter optimizer updates. The four-task pilot completed 20 updates per task and saved a checkpoint after each task. All 596,049,920 parameters were trainable; peak CUDA allocation during training was 10.86 GiB. No OOM or automatic fallback occurred.
 
-## Project status
+The corrected base scores are 0.42 task848 Accuracy, 0.48 task611 Accuracy, 0.0627 task1590 ROUGE-L, and 0.18 task1500 Accuracy. After the four-task sequence they are 0.38, 0.00, 0.0058, and 0.82. The old task611 Exact Match score was invalid because the model often returned a complete option while the reference was only a letter. See the [pilot evaluation audit](reports/pilot_evaluation_audit.md) and [pilot report](reports/baseline_pilot_report.md); the corrected matrix is at D:/Task-Aware-TransNAS/results/baseline_pilot/accuracy_matrix.csv.
 
-The project structure, `pyproject.toml` metadata, editable package install (`task-aware-transnas==0.1.0`), local model configuration, replay-buffer scaffold, NAS search-space scaffold, smoke script, and environment checker are in place. The project Git repository is initialized on `main`. No dataset preparation, NAS search, continual-learning experiment, or formal training has run.
-
-An incomplete, unused `.venv/` directory remains from an earlier bootstrap attempt. It is Git-ignored and the working environment is `conda-env/`. Automatic policy review rejected the recursive deletion of that generated directory, so it was left in place.
+The audit found left truncation removed the task definition for 64/500 task848 training examples and 160/500 task1500 training examples. Formal runs must preserve the complete instruction and truncate only input context. This short pilot is not a full benchmark.
 
 ## Next commands
 
-From PowerShell or Command Prompt:
+In Windows PowerShell from the project directory:
 
-```powershell
-cd C:\Users\Lenovo\Desktop\nas-cl-transformer\Task-Aware-TransNAS
-conda activate .\conda-env
-python -m pip install -e . --no-deps
-python .\scripts\check_environment.py
-python .\scripts\smoke_inference.py
-```
+1. Activate the environment: conda activate .\conda-env
+2. Rebuild deterministic data splits if needed: python .\scripts\prepare_citb.py
+3. Run a one-task smoke: python .\scripts\run_continual_baseline.py --mode smoke
+4. Repeat the four-task pilot: python .\scripts\run_continual_baseline.py --mode pilot
 
-The resolved package lock is in `requirements.txt`. To recreate the pip layer inside a matching Python 3.11 environment, run `python -m pip install -r requirements.txt`, then install the local source package with `python -m pip install -e . --no-deps`.
-
-When ready for experiments, first add versioned dataset manifests and task-specific configuration, then implement the training/search entry points; no formal training command is provided yet.
-
-## References
-
-- [PyTorch Windows/CUDA wheel installation matrix](https://pytorch.org/get-started/previous-versions/)
-- [Transformers installation and local model loading](https://huggingface.co/docs/transformers/installation)
+The runner starts from the configured local base model each time. The project [README](README.md) and [baseline protocol](docs/continual_baseline.md) describe the setup.

@@ -1,0 +1,75 @@
+phase: 6B
+seed: 10
+model:
+  source: MODEL_DIR
+  architecture: Qwen3-0.6B
+  local_files_only: true
+  hidden_size: 1024
+  layers: 28
+  max_sequence_length: 512
+  max_target_tokens: 64
+  max_new_tokens: 64
+dataset:
+  processed_dir: D:/Task-Aware-TransNAS/data/processed/citb_formal_4tasks
+  tasks:
+    - task565_circa_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1501_dstc3_answer_generation
+    - task1384_deal_or_no_dialog_classification
+  splits_read: [train, dev]
+  test_split_read: false
+  dev_examples_per_task: 50
+sequences:
+  S1:
+    - task565_circa_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1501_dstc3_answer_generation
+    - task1384_deal_or_no_dialog_classification
+  S2:
+    - task565_circa_answer_generation
+    - task1501_dstc3_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1384_deal_or_no_dialog_classification
+training:
+  name: task_calibrated
+  steps_by_task:
+    task565_circa_answer_generation: 50
+    task1603_smcalflow_sentence_generation: 250
+    task1501_dstc3_answer_generation: 50
+    task1384_deal_or_no_dialog_classification: 50
+  microbatch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 0.00001
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  optimizer: AdamW
+  optimizer_reinitialized_at_task_boundary: true
+  base_model_trainable: true
+architecture:
+  primary_layers: [25, 27]
+  random_location_layers: [21, 22]
+  random_location_selection_seed: 20261010
+  bottleneck_size_per_path: 64
+  routes: 4
+  maximum_added_parameter_fraction: 0.01
+  variants:
+    - B0
+    - B1-static
+    - B2-input
+    - B3-oracle
+    - B2-random-location
+  mechanism_controls:
+    - B2-input-random-route
+    - B2-input-static-gate
+    - B2-input-residual-off
+metrics:
+  generation: [rouge_l_f1, token_f1, teacher_forced_token_nll, generated_token_count, exact_yes_no_output_share]
+  classification: [accuracy, macro_f1, teacher_forced_token_nll, yes_no_output_collapse_rate]
+  continual_learning: [nonnegative_forgetting, bwt, new_task_acquisition]
+  runtime: [added_parameters, approximate_forward_flops, gpu_seconds, peak_cuda_allocated_bytes]
+storage:
+  root: results/phase6b
+  checkpoints: results/phase6b/checkpoints
+  policy: only_one_final_checkpoint_per_nonbaseline_run
+  keep_historical_full_models_online: false
+nas_started: false

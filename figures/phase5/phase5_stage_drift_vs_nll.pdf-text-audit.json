@@ -1,0 +1,10 @@
+﻿{
+  "pdf": "figures\\phase5\\phase5_stage_drift_vs_nll.pdf",
+  "auditable": true,
+  "minimum_required_pt": 5.0,
+  "minimum_found_pt": 6.0,
+  "text_run_count": 42,
+  "below_minimum_count": 0,
+  "below_minimum": [],
+  "warnings": []
+}

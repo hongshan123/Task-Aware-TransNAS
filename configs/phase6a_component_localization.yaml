@@ -1,0 +1,87 @@
+phase: 6A
+name: component_level_causal_localization
+seed: 314159
+
+model:
+  source: MODEL_DIR
+  local_files_only: true
+  architecture: Qwen3-0.6B
+  target_trajectory: A0/S1/seed_10
+  geometry:
+    layers: 28
+    query_heads: 16
+    key_value_heads: 8
+    head_dim: 128
+    hidden_size: 1024
+  tied_word_embeddings: true
+
+checkpoints:
+  historical_reference_after_two_generation_tasks: results/phase5b/checkpoints/historical_boundary_replay/A0/S1/seed_10/after_2_task1603_smcalflow_sentence_generation
+  after_first_classifier_task: results/phase6a/checkpoints/after_3_task1501_dstc3_answer_generation
+  final_after_second_classifier_task: results/phase4b/checkpoints/A0/S1/seed_10
+  original_training_manifest: results/phase4b/runs/A0/S1/seed_10/metrics.json
+  data_hash_manifest: results/phase5b/boundary_replay_manifest.json
+
+data:
+  tasks:
+    - task565_circa_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1501_dstc3_answer_generation
+    - task1384_deal_or_no_dialog_classification
+  allowed_splits: [train, dev]
+  test_split_read: false
+  preflight_dev_indices: [0, 4]
+  activation_screen_dev_indices: [5, 14]
+  parameter_screen_dev_indices: [15, 24]
+  locked_confirmation_dev_indices: [25, 49]
+
+activation_replacement:
+  teacher_forced_patch_positions: suffix_from_prompt_final_residual_position
+  autoregressive_patch_positions: final_component_output_position_each_step
+  components:
+    - attention_o_proj_output
+    - mlp_output
+    - transformer_block_output
+    - token_embedding_output
+    - final_norm_output
+    - lm_head_logits_upper_bound
+  layers_zero_based: all_28
+  contiguous_layer_group_widths: [2, 4, 8, 14, 28]
+  candidate_selection: activation_screen_dev_then_parameter_screen_dev
+  controls:
+    - zero_no_op
+    - random_layer
+    - random_direction_same_l2_norm
+    - reference_activation_norm_matched_random
+
+parameter_rollback:
+  target: final_after_task1384_checkpoint
+  references:
+    - after_two_generation_tasks
+    - after_first_classifier_task
+  components:
+    attention: [q_proj, k_proj, v_proj, o_proj]
+    mlp: [gate_proj, up_proj, down_proj]
+    attention_plus_mlp: all_attention_and_mlp_projections
+    embedding_and_lm_head: tied_shared_parameter_group
+    normalization: all_input_post_attention_and_final_norms
+  scopes:
+    - single_layer
+    - contiguous_layer_groups
+    - component_type_global
+  matched_update_budget_control: true
+  train_or_optimizer_step: false
+
+metrics:
+  generation: [rouge_l_f1, token_f1, teacher_forced_token_nll, generated_length_including_eos]
+  binary_output: [exact_yes_rate, exact_no_rate, exact_yes_no_rate, label_log_probability_margin, invalid_answer_format_rate]
+  classifiers: [accuracy, macro_f1, correct_reference_log_probability]
+  parameter_rollback: [parameter_count, rollback_fraction, update_l2_norm, update_rms, elapsed_seconds]
+
+runtime:
+  gpu: RTX_4090_24GB
+  max_generation_tokens: 64
+  greedy: true
+  cache_interventions: true
+  nas_started: false
+  test_split_loaded: false

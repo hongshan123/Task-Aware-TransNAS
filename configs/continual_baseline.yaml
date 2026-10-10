@@ -1,0 +1,35 @@
+seed: 10
+dataset:
+  source_repo: D:/Task-Aware-TransNAS/data/CITB-official
+  source_data: D:/Task-Aware-TransNAS/data/CITB-official/data
+  processed_dir: D:/Task-Aware-TransNAS/data/processed/citb_cl_dialogue_tasks
+  stream_order_file: CIT_data/task_orders/stream=cl_dialogue_tasks/order1.txt
+  split_file: splits/CIT_splits/cl_dialogue_tasks.txt
+  train_per_task: 500
+  dev_per_task: 50
+  test_per_task: 50
+  tasks:
+    - task848_pubmedqa_classification
+    - task611_mutual_multi_turn_dialogue
+    - task1590_diplomacy_text_generation
+    - task1500_dstc3_classification
+model:
+  env_var: MODEL_DIR
+  max_sequence_length: 512
+  max_new_tokens: 64
+  weight_dtype: float32
+  compute_dtype: bfloat16
+training:
+  steps_per_task: 20
+  micro_batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 0.00002
+  weight_decay: 0.01
+  gradient_checkpointing: true
+evaluation:
+  max_examples_per_task: 50
+  exact_match: normalized
+storage:
+  root: D:/Task-Aware-TransNAS
+  checkpoints: D:/Task-Aware-TransNAS/checkpoints
+  results: D:/Task-Aware-TransNAS/results

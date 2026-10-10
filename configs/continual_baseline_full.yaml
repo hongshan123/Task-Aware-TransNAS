@@ -1,0 +1,163 @@
+seed: 314159
+training_seeds: [314159, 314160, 314161]
+dataset:
+  source_repo: D:/Task-Aware-TransNAS/data/CITB-official
+  source_data: D:/Task-Aware-TransNAS/data/CITB-official/data
+  processed_dir: D:/Task-Aware-TransNAS/data/processed/citb_formal_4tasks
+  stream_order_file: CIT_data/task_orders/stream=cl_dialogue_tasks/order1.txt
+  split_file: splits/CIT_splits/cl_dialogue_tasks.txt
+  train_per_task: 500
+  dev_per_task: 50
+  test_per_task: 50
+  tasks:
+  - task565_circa_answer_generation
+  - task1603_smcalflow_sentence_generation
+  - task1501_dstc3_answer_generation
+  - task1384_deal_or_no_dialog_classification
+  task_types:
+    task565_circa_answer_generation:
+      type: generation
+      primary_metric: rouge_l_f1
+    task1603_smcalflow_sentence_generation:
+      type: generation
+      primary_metric: rouge_l_f1
+    task1501_dstc3_answer_generation:
+      type: classification
+      primary_metric: accuracy
+      labels: &id001
+      - 'Yes'
+      - 'No'
+      parser: yes_no
+    task1384_deal_or_no_dialog_classification:
+      type: classification
+      primary_metric: accuracy
+      labels: &id002
+      - 'Yes'
+      - 'No'
+      parser: yes_no
+sequences:
+  homogeneous:
+  - task565_circa_answer_generation
+  - task1603_smcalflow_sentence_generation
+  - task1501_dstc3_answer_generation
+  - task1384_deal_or_no_dialog_classification
+  heterogeneous:
+  - task565_circa_answer_generation
+  - task1501_dstc3_answer_generation
+  - task1603_smcalflow_sentence_generation
+  - task1384_deal_or_no_dialog_classification
+  mixed:
+  - task565_circa_answer_generation
+  - task1501_dstc3_answer_generation
+  - task1384_deal_or_no_dialog_classification
+  - task1603_smcalflow_sentence_generation
+tuning:
+  sequence: homogeneous
+  learning_rates:
+  - 5.0e-06
+  - 1.0e-05
+  - 2.0e-05
+  steps_per_task:
+  - 20
+  - 50
+  - 100
+  selection_metric: normalized_average_accuracy_all_tasks
+  selected:
+    candidate_id: lr_1e-05_steps_50
+    learning_rate: 1.0e-05
+    steps_per_task: 50
+    selection_metric: normalized_average_accuracy_all_tasks
+    selection_score: 0.03951890527769863
+    dev_scores:
+      task565_circa_answer_generation:
+        task_type: generation
+        primary_metric: rouge_l_f1
+        primary_score: 0.0
+        rouge_l_f1: 0.0
+        token_f1: 0.0
+        exact_match: 0.0
+        evaluated: 50
+        input_tail_truncated_count: 0
+        definition_preservation_rate: 1.0
+        mean_prompt_tokens: 73.04
+        eos_termination_rate: 1.0
+        oom_retry_count: 0
+        prediction_file: D:\Task-Aware-TransNAS\results\baseline_full\tuning\predictions\lr_1e-05_steps_50\dev\task565_circa_answer_generation.jsonl
+      task1603_smcalflow_sentence_generation:
+        task_type: generation
+        primary_metric: rouge_l_f1
+        primary_score: 0.006818181818181819
+        rouge_l_f1: 0.006818181818181819
+        token_f1: 0.006818181818181818
+        exact_match: 0.0
+        evaluated: 50
+        input_tail_truncated_count: 0
+        definition_preservation_rate: 1.0
+        mean_prompt_tokens: 93.08
+        eos_termination_rate: 1.0
+        oom_retry_count: 0
+        prediction_file: D:\Task-Aware-TransNAS\results\baseline_full\tuning\predictions\lr_1e-05_steps_50\dev\task1603_smcalflow_sentence_generation.jsonl
+      task1501_dstc3_answer_generation:
+        task_type: classification
+        primary_metric: accuracy
+        primary_score: 0.86
+        accuracy: 0.86
+        macro_f1: 0.8133333333333332
+        parse_success_rate: 1.0
+        class_labels: *id001
+        evaluated: 50
+        input_tail_truncated_count: 15
+        definition_preservation_rate: 1.0
+        mean_prompt_tokens: 441.62
+        eos_termination_rate: 1.0
+        oom_retry_count: 0
+        prediction_file: D:\Task-Aware-TransNAS\results\baseline_full\tuning\predictions\lr_1e-05_steps_50\dev\task1501_dstc3_answer_generation.jsonl
+      task1384_deal_or_no_dialog_classification:
+        task_type: classification
+        primary_metric: accuracy
+        primary_score: 0.9
+        accuracy: 0.9
+        macro_f1: 0.8493068113321278
+        parse_success_rate: 1.0
+        class_labels: *id002
+        evaluated: 50
+        input_tail_truncated_count: 0
+        definition_preservation_rate: 1.0
+        mean_prompt_tokens: 134.34
+        eos_termination_rate: 1.0
+        oom_retry_count: 0
+        prediction_file: D:\Task-Aware-TransNAS\results\baseline_full\tuning\predictions\lr_1e-05_steps_50\dev\task1384_deal_or_no_dialog_classification.jsonl
+    normalized_gain_by_task:
+      task565_circa_answer_generation: -0.24587083952024558
+      task1603_smcalflow_sentence_generation: -0.1793868727022933
+      task1501_dstc3_answer_generation: 0.4166666666666666
+      task1384_deal_or_no_dialog_classification: 0.16666666666666682
+    selection_rule: Highest mean baseline-headroom-normalized primary score over all
+      four dev tasks after the homogeneous tuning stream; ties prefer fewer optimizer
+      steps then lower learning rate.
+  frozen_utc: '2026-10-09T08:14:49.907519+00:00'
+model:
+  env_var: MODEL_DIR
+  local_files_only: true
+  trust_remote_code: false
+  max_sequence_length: 512
+  max_target_tokens: 64
+  max_new_tokens: 64
+  weight_dtype: float32
+  compute_dtype: bfloat16
+training:
+  steps_per_task: 50
+  micro_batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-05
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  gradient_checkpointing: true
+evaluation:
+  max_examples_per_task: 50
+  generation_batch_size: 1
+  generation_max_new_tokens: 64
+storage:
+  root: D:/Task-Aware-TransNAS
+  checkpoints: D:/Task-Aware-TransNAS/checkpoints/baseline_full
+  results: D:/Task-Aware-TransNAS/results/baseline_full
