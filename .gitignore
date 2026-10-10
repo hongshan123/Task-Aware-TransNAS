@@ -38,3 +38,4 @@ results/phase6b/*
 !results/phase6b/pilot_task_metrics.csv
 !results/phase6b/pilot_resource_summary.csv
 !results/phase6b/task_similarity_gradient_matrix.csv
+!results/phase6b/compatibility_manifest.json

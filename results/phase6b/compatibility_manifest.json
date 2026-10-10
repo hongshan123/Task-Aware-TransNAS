@@ -1,0 +1,164 @@
+{
+  "phase": "6B",
+  "artifact": "cross-task recovery compatibility matrices",
+  "matrix_definition": "C_ij = Q_j(Patch_i(M)) - Q_j(M); primary delta uses target-native ROUGE-L or accuracy; NLL compatibility is baseline token NLL minus patched token NLL.",
+  "model_M": "final A0/S1/seed10 checkpoint after task1384",
+  "source_references": {
+    "generation_tasks": "historical after-task1603 checkpoint",
+    "classification_tasks": "historical after-task1501 checkpoint"
+  },
+  "locked_dev_indices": [
+    25,
+    49
+  ],
+  "matrix_cells_per_intervention": 16,
+  "complete_matrices": {
+    "activation": true,
+    "parameter_rollback": true
+  },
+  "diagonal_provenance": "Phase 6A locked confirmation; read-only",
+  "cross_type_edge_provenance": "Phase 6A cross-task transfer; read-only",
+  "same_type_edge_provenance": "Phase 6B supplement; 8 conditions and 200 per-example records",
+  "task_similarity_source": "D:\\Task-Aware-TransNAS\\data\\task_selection\\task_relation_analysis.json",
+  "task_similarity_split": "order1 train examples; no dev/test used in similarity computation",
+  "task_relation_gradient_parameters": [
+    "model.layers.27.self_attn.o_proj.weight",
+    "model.layers.27.mlp.down_proj.weight"
+  ],
+  "correlations": {
+    "activation": {
+      "directed_off_diagonal_pairs": 12,
+      "spearman_representation_cosine_vs_nll_compatibility": 0.21202604782206586,
+      "spearman_gradient_cosine_vs_nll_compatibility": 0.16962083825765267,
+      "spearman_negative_gradient_conflict_magnitude_vs_nll_compatibility": -0.025087260300212723,
+      "representation_cosines": [
+        0.842307984828949,
+        0.761703610420227,
+        0.8218889832496643,
+        0.7567513585090637,
+        0.842307984828949,
+        0.8218889832496643,
+        0.761703610420227,
+        0.7567513585090637,
+        0.89805006980896,
+        0.89805006980896,
+        0.920101523399353,
+        0.920101523399353
+      ],
+      "gradient_cosines": [
+        -0.03155256062746048,
+        -0.04251101613044739,
+        0.07238613069057465,
+        0.07676288485527039,
+        -0.03155256062746048,
+        0.07238613069057465,
+        -0.04251101613044739,
+        0.07676288485527039,
+        0.2539370656013489,
+        0.2539370656013489,
+        0.9517821073532104,
+        0.9517821073532104
+      ],
+      "nll_compatibility_values": [
+        -3.2234970908860365,
+        -2.6108549840158473,
+        -5.91212640658021,
+        -5.528637252540017,
+        0.47702473402023315,
+        0.18691660077483574,
+        1.0854020289012363,
+        0.5346473703781762,
+        1.4270312523262367,
+        2.4167833626270294,
+        -0.04436481166941425,
+        0.09551593692352375
+      ],
+      "negative_gradient_cosine_pair_count": 2,
+      "interpretation": "Descriptive rank correlations over four tasks/12 directed pairs; paired directions and task-specific intervention types make these non-independent, exploratory evidence only."
+    },
+    "parameter_rollback": {
+      "directed_off_diagonal_pairs": 12,
+      "spearman_representation_cosine_vs_nll_compatibility": 0.2695103242722549,
+      "spearman_gradient_cosine_vs_nll_compatibility": 0.2269560625450568,
+      "spearman_negative_gradient_conflict_magnitude_vs_nll_compatibility": -0.151052644493404,
+      "representation_cosines": [
+        0.842307984828949,
+        0.761703610420227,
+        0.8218889832496643,
+        0.7567513585090637,
+        0.842307984828949,
+        0.8218889832496643,
+        0.761703610420227,
+        0.7567513585090637,
+        0.89805006980896,
+        0.89805006980896,
+        0.920101523399353,
+        0.920101523399353
+      ],
+      "gradient_cosines": [
+        -0.03155256062746048,
+        -0.04251101613044739,
+        0.07238613069057465,
+        0.07676288485527039,
+        -0.03155256062746048,
+        0.07238613069057465,
+        -0.04251101613044739,
+        0.07676288485527039,
+        0.2539370656013489,
+        0.2539370656013489,
+        0.9517821073532104,
+        0.9517821073532104
+      ],
+      "nll_compatibility_values": [
+        -5.838718012720347,
+        -5.4621163963185,
+        -5.838718012720347,
+        -5.4621163963185,
+        0.5378220336777826,
+        0.28165433252299277,
+        0.2138398970876425,
+        0.1089444734432079,
+        1.4549629332290754,
+        2.4207396464688435,
+        -0.009919267088795702,
+        0.06920000535746418
+      ],
+      "negative_gradient_cosine_pair_count": 2,
+      "interpretation": "Descriptive rank correlations over four tasks/12 directed pairs; paired directions and task-specific intervention types make these non-independent, exploratory evidence only."
+    }
+  },
+  "activation_component_compatibility": {
+    "residual_stream": {
+      "source_tasks": [
+        "task1603_smcalflow_sentence_generation",
+        "task565_circa_answer_generation"
+      ],
+      "directed_transfer_count": 6,
+      "mean_target_token_nll_improvement": -2.2385501865114734,
+      "positive_transfer_fraction": 0.3333333333333333,
+      "mean_target_primary_delta": -0.27050674371325306
+    },
+    "attention": {
+      "source_tasks": [
+        "task1501_dstc3_answer_generation"
+      ],
+      "directed_transfer_count": 3,
+      "mean_target_token_nll_improvement": 0.20652550770855158,
+      "positive_transfer_fraction": 0.6666666666666666,
+      "mean_target_primary_delta": 0.0055760029444239965
+    },
+    "mlp": {
+      "source_tasks": [
+        "task1384_deal_or_no_dialog_classification"
+      ],
+      "directed_transfer_count": 3,
+      "mean_target_token_nll_improvement": 0.5718551120676454,
+      "positive_transfer_fraction": 1.0,
+      "mean_target_primary_delta": 0.058909336277757345
+    }
+  },
+  "historical_model_information": "The patch condition imports activations/weights from the historical boundary. It is not the target model's native retained capability. Phase 6B B1/B2/B3 pilot does not load or forward historical models.",
+  "test_split_loaded": false,
+  "optimizer_steps": 0,
+  "nas_started": false
+}
