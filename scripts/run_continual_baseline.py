@@ -13,17 +13,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_STORAGE_ROOT = Path("D:/Task-Aware-TransNAS")
-os.environ.setdefault("HF_HOME", str(DEFAULT_STORAGE_ROOT / "cache" / "huggingface"))
-os.environ.setdefault("HF_HUB_CACHE", str(DEFAULT_STORAGE_ROOT / "cache" / "huggingface" / "hub"))
-os.environ.setdefault("HF_DATASETS_CACHE", str(DEFAULT_STORAGE_ROOT / "cache" / "huggingface" / "datasets"))
-os.environ.setdefault("TORCH_HOME", str(DEFAULT_STORAGE_ROOT / "cache" / "torch"))
+try:
+    from .runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+DEFAULT_STORAGE_ROOT = storage_root(PROJECT_ROOT)
+configure_cache_environment(PROJECT_ROOT)
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import torch
 import yaml
-from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -390,7 +394,10 @@ def main() -> None:
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_DATASETS_OFFLINE"] = "1"
-    config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    config_path = resolve_runtime_path(args.config, project_root=PROJECT_ROOT)
+    config = resolve_config_paths(
+        yaml.safe_load(config_path.read_text(encoding="utf-8")), project_root=PROJECT_ROOT
+    )
     dataset_cfg = config["dataset"]
     model_cfg = config["model"]
     training_cfg = dict(config["training"])
@@ -400,20 +407,18 @@ def main() -> None:
     if training_cfg["steps_per_task"] <= 0:
         raise ValueError("steps-per-task must be positive")
     if int(training_cfg["micro_batch_size"]) != 1:
-        raise ValueError("This Windows memory-bounded runner currently requires micro_batch_size=1")
+        raise ValueError("This memory-bounded runner currently requires micro_batch_size=1")
 
     model_value = os.environ.get(model_cfg["env_var"])
     if not model_value:
         raise EnvironmentError(f"Set {model_cfg['env_var']} in the project .env file")
-    model_path = Path(model_value)
-    if not model_path.is_absolute():
-        model_path = (PROJECT_ROOT / model_path).resolve()
+    model_path = resolve_runtime_path(model_value, project_root=PROJECT_ROOT)
     if not model_path.is_dir():
         raise FileNotFoundError(f"Local model directory not found: {model_path}")
-    data_root = Path(dataset_cfg["processed_dir"])
+    data_root = resolve_runtime_path(dataset_cfg["processed_dir"], project_root=PROJECT_ROOT)
     run_name = "baseline_pilot" if args.mode == "pilot" else "smoke"
-    result_root = Path(config["storage"]["results"]) / run_name
-    checkpoint_root = Path(config["storage"]["checkpoints"]) / run_name
+    result_root = resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT) / run_name
+    checkpoint_root = resolve_runtime_path(config["storage"]["checkpoints"], project_root=PROJECT_ROOT) / run_name
     result_root.mkdir(parents=True, exist_ok=True)
     checkpoint_root.mkdir(parents=True, exist_ok=True)
     manifest_path = data_root / "data_manifest.json"
@@ -424,8 +429,14 @@ def main() -> None:
     task_infos = manifest["tasks"]
     if args.mode == "smoke":
         task_infos = task_infos[:1]
-    train_by_task = {item["task_id"]: read_jsonl(Path(item["split_files"]["train"])) for item in task_infos}
-    test_by_task = {item["task_id"]: read_jsonl(Path(item["split_files"]["test"])) for item in task_infos}
+    train_by_task = {
+        item["task_id"]: read_jsonl(resolve_runtime_path(item["split_files"]["train"], project_root=PROJECT_ROOT))
+        for item in task_infos
+    }
+    test_by_task = {
+        item["task_id"]: read_jsonl(resolve_runtime_path(item["split_files"]["test"], project_root=PROJECT_ROOT))
+        for item in task_infos
+    }
     if any(not train_by_task[item["task_id"]] or not test_by_task[item["task_id"]] for item in task_infos):
         raise RuntimeError("At least one configured task has an empty train or test split")
 

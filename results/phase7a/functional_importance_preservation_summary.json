@@ -1,0 +1,28 @@
+{
+  "sequences": [
+    "S1",
+    "S2"
+  ],
+  "correlation_groups": 48,
+  "component_measurements": 409344,
+  "exact_rollback_interventions": 96,
+  "opened_split_paths": [
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1603_smcalflow_sentence_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1603_smcalflow_sentence_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1501_dstc3_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1501_dstc3_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1501_dstc3_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1603_smcalflow_sentence_generation/dev.jsonl"
+  ],
+  "evaluation_splits_loaded": [
+    "dev"
+  ],
+  "test_split_files_opened": [],
+  "risk_definition": "old-task dev token-NLL gradient at the post-task checkpoint dotted with the actual task parameter delta; exact rollback is post-update NLL minus NLL after restoring one component and matched controls"
+}

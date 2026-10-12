@@ -15,17 +15,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import torch
-import torch.nn.functional as F
 import yaml
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-STORAGE_ROOT = Path("D:/Task-Aware-TransNAS")
-os.environ.setdefault("HF_HOME", str(STORAGE_ROOT / "cache" / "huggingface"))
-os.environ.setdefault("HF_HUB_CACHE", str(STORAGE_ROOT / "cache" / "huggingface" / "hub"))
+try:
+    from .runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+STORAGE_ROOT = storage_root(PROJECT_ROOT)
+configure_cache_environment(PROJECT_ROOT)
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+import torch
+import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -252,11 +257,13 @@ def find_best_two_pair_clusters(
 
 def main() -> None:
     start = time.perf_counter()
-    load_dotenv(PROJECT_ROOT / ".env", override=False)
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
-    config = yaml.safe_load((PROJECT_ROOT / "configs" / "continual_baseline.yaml").read_text(encoding="utf-8"))
-    citb_data = Path(config["dataset"]["source_data"])
+    config = resolve_config_paths(
+        yaml.safe_load((PROJECT_ROOT / "configs" / "continual_baseline.yaml").read_text(encoding="utf-8")),
+        project_root=PROJECT_ROOT,
+    )
+    citb_data = resolve_runtime_path(config["dataset"]["source_data"], project_root=PROJECT_ROOT)
     task_order = [line.strip() for line in (citb_data / "CIT_data/task_orders/stream=cl_dialogue_tasks/order1.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
     split_file = citb_data / "splits/CIT_splits/cl_dialogue_tasks.txt"
     official_stream = [line.strip() for line in split_file.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -429,7 +436,14 @@ def main() -> None:
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "analysis_seed": ANALYSIS_SEED,
         "data_source_commit": __import__("subprocess").check_output(
-            ["git", "-C", str(Path(config["dataset"]["source_repo"])), "rev-parse", "HEAD"], text=True
+            [
+                "git",
+                "-C",
+                str(resolve_runtime_path(config["dataset"]["source_repo"], project_root=PROJECT_ROOT)),
+                "rev-parse",
+                "HEAD",
+            ],
+            text=True,
         ).strip(),
         "selection_guard": "Only the official order1 train pool (source indices >=100) was used for task relationships. First 50 test records were not loaded into representations or gradient batches; the next 50 dev records were not used for task choice.",
         "training_cap_per_candidate": TRAIN_CAP,

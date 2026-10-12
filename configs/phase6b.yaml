@@ -10,7 +10,7 @@ model:
   max_target_tokens: 64
   max_new_tokens: 64
 dataset:
-  processed_dir: D:/Task-Aware-TransNAS/data/processed/citb_formal_4tasks
+  processed_dir: data/processed/citb_formal_4tasks
   tasks:
     - task565_circa_answer_generation
     - task1603_smcalflow_sentence_generation

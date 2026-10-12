@@ -8,9 +8,22 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RESULTS_ROOT = Path("D:/Task-Aware-TransNAS/results/order_sensitivity")
-REPORT_PATH = PROJECT_ROOT / "reports" / "order_effect_analysis.md"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+try:
+    from .runtime_paths import storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import storage_root
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+STORAGE_ROOT = storage_root(PROJECT_ROOT)
+RESULTS_ROOT = storage_path("results") / "order_sensitivity"
+REPORT_PATH = storage_path("reports") / "order_effect_analysis.md"
 RESULT_REPORT_PATH = RESULTS_ROOT / "order_effect_analysis.md"
 
 
@@ -180,7 +193,7 @@ def main() -> None:
             "",
             "The controlled slopes and switch-group means describe these exact four tasks, one training seed, and one dev split. They are not significance estimates and do not establish a causal effect of type switching. The experiment contains no test evaluation and makes no architecture or NAS claims.",
             "",
-            "Artifacts: `results/order_sensitivity/all_24_orders.csv`, `results/order_sensitivity/order_metrics.json`, `results/order_sensitivity/experiment_config.json`, and two final review checkpoints under `D:/Task-Aware-TransNAS/checkpoints/order_sensitivity/review/`.",
+            f"Artifacts: `{RESULTS_ROOT / 'all_24_orders.csv'}`, `{RESULTS_ROOT / 'order_metrics.json'}`, `{RESULTS_ROOT / 'experiment_config.json'}`, and two final review checkpoints under `{STORAGE_ROOT / 'checkpoints' / 'order_sensitivity' / 'review'}`.",
             "",
         ]
     )

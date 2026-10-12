@@ -13,8 +13,12 @@ import numpy as np
 from scipy.stats import rankdata
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PHASE5_ROOT = PROJECT_ROOT / "results" / "phase5" / "fv" / "head_effects" / "v2_bf16_dequantized_fp32" / "phase4b_A0_S1_seed10"
-OUT_ROOT = PROJECT_ROOT / "results" / "phase5b" / "head_similarity"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+PHASE5_ROOT = storage_path("results") / "phase5" / "fv" / "head_effects" / "v2_bf16_dequantized_fp32" / "phase4b_A0_S1_seed10"
+OUT_ROOT = storage_path("results") / "phase5b" / "head_similarity"
 TASKS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",

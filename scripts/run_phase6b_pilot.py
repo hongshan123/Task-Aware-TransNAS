@@ -19,6 +19,10 @@ import torch
 from safetensors.torch import load_file, save_file
 
 ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
@@ -45,7 +49,7 @@ from run_phase4b_comparison import SEQUENCES, TASK_CALIBRATED_STEPS, summarize_p
 from task_aware_transnas.cl.metrics import continual_learning_metrics
 
 
-OUT = ROOT / "results" / "phase6b"
+OUT = storage_path("results") / "phase6b"
 ARCHITECTURES = ("B1-static", "B2-input", "B3-oracle", "B2-random-location")
 PRIMARY_LAYERS = [25, 27]
 BOTTLENECK_PER_EXPERT = 64
@@ -178,7 +182,7 @@ def evaluate_matrix(
 
 
 def _load_a0_metrics(sequence_name: str) -> dict[str, Any]:
-    path = ROOT / "results" / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"
+    path = storage_path("results") / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"
     if not path.is_file():
         raise FileNotFoundError(f"Existing matched A0 seed-10 baseline is required: {path}")
     row = json.loads(path.read_text(encoding="utf-8"))
@@ -323,7 +327,7 @@ def run_variant(
         "baseline": {task: float(score) for task, score in baseline["stage_scores_by_primary_metric"]["baseline"].items()}
     }
     task_metrics: dict[str, Any] = {"baseline": baseline["task_metrics"]["baseline"]}
-    eval_times: dict[str, Any] = {"baseline": {"reused_from": str(ROOT / "results" / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"), "duration_seconds": 0.0}}
+    eval_times: dict[str, Any] = {"baseline": {"reused_from": str(storage_path("results") / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"), "duration_seconds": 0.0}}
     training_metrics: dict[str, Any] = {}
     gradient_trace_path = run_root / "gradient_diagnostics.jsonl"
     gradient_trace_path.write_text("", encoding="utf-8")
@@ -662,7 +666,7 @@ def main() -> None:
     for sequence_name in args.sequences:
         baseline = _load_a0_metrics(sequence_name)
         results["baseline_reused"][sequence_name] = {
-            "source_metrics": str(ROOT / "results" / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"),
+            "source_metrics": str(storage_path("results") / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"),
             "training_seed": 10,
             "task_order": baseline["task_order"],
             "sample_order_sha256_by_task": {task: baseline["training_metrics"][task]["sample_order_sha256"] for task in TASK_IDS},
@@ -677,7 +681,7 @@ def main() -> None:
             "sequence_name": sequence_name,
             "seed": 10,
             "task_order": baseline["task_order"],
-            "source_metrics_reused_from": str(ROOT / "results" / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"),
+            "source_metrics_reused_from": str(storage_path("results") / "phase4b" / "runs" / "A0" / sequence_name / "seed_10" / "metrics.json"),
             "stage_scores_by_primary_metric": baseline["stage_scores_by_primary_metric"],
             "task_metrics": baseline["task_metrics"],
             "training_metrics": baseline["training_metrics"],

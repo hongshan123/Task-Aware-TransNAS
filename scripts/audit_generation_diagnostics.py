@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 import torch
 import yaml
 
@@ -18,6 +19,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from run_formal_baseline import (  # noqa: E402
     evaluate_task,
+    load_project_config,
     load_model,
     load_manifest_records,
     load_tokenizer,
@@ -26,6 +28,7 @@ from run_formal_baseline import (  # noqa: E402
     word_tokens,
     write_json,
 )
+from runtime_paths import resolve_runtime_path  # noqa: E402
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -135,6 +138,7 @@ def pair_rate(dev_value: Any, test_value: Any) -> str:
 
 def write_report(
     report_path: Path,
+    results_root: Path,
     task_ids: list[str],
     stage_order: list[str],
     dev: dict[str, dict[str, dict[str, Any]]],
@@ -245,7 +249,7 @@ def write_report(
             "",
             "At the base checkpoint, both classification tasks parse every dev and test answer. After the first generation task, parser success falls to zero for both. After task 3 it returns to 100% for task1501, while task1384 remains at 0.28 dev / 0.24 test Accuracy with all outputs parseable; after task 4 both are again fully parseable. The class table separates answer formatting from class accuracy.",
             "",
-            f"Machine-readable stage metrics: `D:/Task-Aware-TransNAS/results/baseline_full/generation_diagnostics/metrics.json`. The representative JSONL contains three records for every task, checkpoint, and split: `{representative_path}`. Full fresh dev predictions are stored under `D:/Task-Aware-TransNAS/results/baseline_full/generation_diagnostics/predictions/`; the original test predictions remain in each formal sequence directory.",
+            f"Machine-readable stage metrics: `{results_root / 'generation_diagnostics' / 'metrics.json'}`. The representative JSONL contains three records for every task, checkpoint, and split: `{representative_path}`. Full fresh dev predictions are stored under `{results_root / 'generation_diagnostics' / 'predictions'}`; the original test predictions remain in each formal sequence directory.",
             "",
         ]
     )
@@ -254,14 +258,18 @@ def write_report(
 
 
 def main() -> None:
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config", type=Path, default=PROJECT_ROOT / "configs" / "continual_baseline_full_linux.yaml"
+    )
     parser.add_argument(
         "--reuse-dev-predictions",
         action="store_true",
         help="Recompute diagnostics from saved dev predictions without running inference again.",
     )
     args = parser.parse_args()
-    config = yaml.safe_load((PROJECT_ROOT / "configs" / "continual_baseline_full.yaml").read_text(encoding="utf-8"))
+    config = load_project_config(args.config)
     results_root = Path(config["storage"]["results"])
     run_root = results_root / "homogeneous"
     run_metrics = read_json(run_root / "metrics.json")
@@ -276,14 +284,20 @@ def main() -> None:
     if not local_only:
         raise RuntimeError("Generation diagnostic requires local_files_only=True")
 
-    model_path_by_stage: dict[str, Path] = {stage_order[0]: Path(run_metrics["model_path"])}
+    model_path_by_stage: dict[str, Path] = {
+        stage_order[0]: resolve_runtime_path(run_metrics["model_path"], project_root=PROJECT_ROOT)
+    }
     for index, task_id in enumerate(run_metrics["task_order"], start=1):
-        model_path_by_stage[stage_order[index]] = Path(run_metrics["training_metrics"][task_id]["checkpoint"])
+        model_path_by_stage[stage_order[index]] = resolve_runtime_path(
+            run_metrics["training_metrics"][task_id]["checkpoint"], project_root=PROJECT_ROOT
+        )
     for path in model_path_by_stage.values():
         if not path.is_dir():
             raise FileNotFoundError(f"Required existing model/checkpoint is missing: {path}")
 
-    tokenizer = load_tokenizer(Path(run_metrics["model_path"]), local_only=True)
+    tokenizer = load_tokenizer(
+        resolve_runtime_path(run_metrics["model_path"], project_root=PROJECT_ROOT), local_only=True
+    )
     dev_records = load_manifest_records(config, "dev", task_ids)
     if any(len(dev_records[task_id]) != int(config["dataset"]["dev_per_task"]) for task_id in task_ids):
         raise RuntimeError("Development rows do not match the configured split counts")
@@ -406,8 +420,13 @@ def main() -> None:
     }
     write_json(output_root / "metrics.json", all_data)
     write_json(output_root / "dev_metrics_partial.json", all_data)
+    report_path = resolve_runtime_path(
+        config.get("reports", {}).get("generation_diagnostics_path", "reports/generation_diagnostics.md"),
+        project_root=PROJECT_ROOT,
+    )
     write_report(
-        PROJECT_ROOT / "reports" / "generation_diagnostics.md",
+        report_path,
+        results_root,
         task_ids,
         stage_order,
         dev_summary,
@@ -415,7 +434,7 @@ def main() -> None:
         representative_path,
     )
     print(f"Generation diagnostic complete: {output_root / 'metrics.json'}", flush=True)
-    print(f"Report: {PROJECT_ROOT / 'reports' / 'generation_diagnostics.md'}", flush=True)
+    print(f"Report: {report_path}", flush=True)
 
 
 if __name__ == "__main__":

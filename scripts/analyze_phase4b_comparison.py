@@ -10,7 +10,20 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+try:
+    from .runtime_paths import resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import resolve_runtime_path, storage_root
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+STORAGE_ROOT = storage_root(PROJECT_ROOT)
 TASK_IDS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",
@@ -204,7 +217,7 @@ def effect_cell(stats: dict[str, Any], digits: int = 3) -> str:
     )
 
 
-def make_report(summary: dict[str, Any], report_path: Path) -> None:
+def make_report(summary: dict[str, Any], report_path: Path, results_root: Path) -> None:
     runs = summary["runs"]
     overall = summary["overall_architecture_summaries"]
     effects = summary["paired_effects"]
@@ -215,7 +228,7 @@ def make_report(summary: dict[str, Any], report_path: Path) -> None:
         "",
         f"All {len(runs)} planned runs completed: three architectures x two orders x three seeds. Every run used the same local Qwen3-0.6B source weights, dev-only evaluation, and a final checkpoint reload audit. The test split was not loaded.",
         "",
-        "All task-by-stage metrics, predictions, teacher-forced NLL, generation behavior, gate traces, timing, VRAM, parameter counts, and reload records are retained under `D:/Task-Aware-TransNAS/results/phase4b/`.",
+        "All task-by-stage metrics, predictions, teacher-forced NLL, generation behavior, gate traces, timing, VRAM, parameter counts, and reload records are retained under the configured storage root at `results/phase4b/`.",
         "",
         "## Main outcomes",
         "",
@@ -339,9 +352,9 @@ def make_report(summary: dict[str, Any], report_path: Path) -> None:
         "", "## Limits", "",
         "This is a small exploratory comparison with three independent seeds. The t intervals describe uncertainty in these runs and cannot establish broad generalization. The task-stream manifest defines a 50-row dev partition per task; every row was evaluated at every stage. No test data were used. The equal-token reference was specified but not run, and A2-lite was not formally trained.",
         "", "## Reproducibility artifacts", "",
-        "- Aggregated machine-readable summary: `D:/Task-Aware-TransNAS/results/phase4b/comparison_summary.json`.",
-        "- Per-run stage metrics, predictions, NLL, gate traces, and checkpoint audits: `D:/Task-Aware-TransNAS/results/phase4b/runs/`.",
-        "- Final full-parameter checkpoints: `D:/Task-Aware-TransNAS/results/phase4b/checkpoints/`.",
+        f"- Aggregated machine-readable summary: `{results_root / 'comparison_summary.json'}`.",
+        f"- Per-run stage metrics, predictions, NLL, gate traces, and checkpoint audits: `{results_root / 'runs'}`.",
+        f"- Final full-parameter checkpoints: `{results_root / 'checkpoints'}`.",
         "- Frozen protocol: `reports/phase4b_training_protocol.md`.", "",
     ])
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -349,8 +362,12 @@ def make_report(summary: dict[str, Any], report_path: Path) -> None:
 
 
 def main() -> None:
-    results_root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(r"D:\Task-Aware-TransNAS\results\phase4b")
-    report_path = PROJECT_ROOT / "reports" / "phase4b_comparison.md"
+    results_root = (
+        resolve_runtime_path(sys.argv[1], project_root=PROJECT_ROOT)
+        if len(sys.argv) > 1
+        else storage_path("results") / "phase4b"
+    )
+    report_path = storage_path("reports") / "phase4b_comparison.md"
     manifest = json.loads((results_root / "formal_run_manifest.json").read_text(encoding="utf-8"))
     if manifest.get("completed") is not True or int(manifest.get("planned_run_count", -1)) != 18 or len(manifest.get("completed_runs", [])) != 18:
         raise ValueError("Formal run manifest does not confirm all 18 planned runs")
@@ -455,7 +472,7 @@ def main() -> None:
         "paired_effects": effects,
     }
     (results_root / "comparison_summary.json").write_text(json.dumps(output, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
-    make_report(output, report_path)
+    make_report(output, report_path, results_root)
     print(f"Validated {len(run_summaries)} paired Phase 4B runs.")
     print(f"Wrote {results_root / 'comparison_summary.json'}")
     print(f"Wrote {report_path}")

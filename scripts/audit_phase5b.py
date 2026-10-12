@@ -9,6 +9,10 @@ import sys
 from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
@@ -17,7 +21,7 @@ from phase5_common import TASK_1384, TASK_1501, TASK_1603, TASK_565, TASK_IDS, l
 from phase5b_common import generated_label_metrics  # noqa: E402
 
 
-ROOT = PROJECT_ROOT / "results" / "phase5b"
+ROOT = storage_path("results") / "phase5b"
 EVAL_ROOT = ROOT / "interventions" / "evaluation"
 
 
@@ -141,7 +145,7 @@ def main() -> None:
     final_flips = sum(left["prediction"] != right["prediction"] for left, right in zip(task1603_base, task1603_final))
     check("task1603_final_fv_one_label_flip", final_flips == 1, {"changed_predictions": final_flips})
 
-    report_path = PROJECT_ROOT / "reports" / "phase5b_fv_recovery.md"
+    report_path = storage_path("reports") / "phase5b_fv_recovery.md"
     check("final_report_exists", report_path.is_file())
     check("canonical_full_run_config_exists", (ROOT / "run_config.json").is_file())
     output = {"phase": "5B", "status": "passed", "check_count": len(checks), "checks": checks, "test_split_loaded": False}

@@ -8,11 +8,16 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
+model/
+runs/
 
 # Local data, checkpoints, and generated runs
 data/raw/**
+data/CITB-official/
 data/processed/**
 data/replay/**
+data/task_selection/**
 artifacts/checkpoints/**
 artifacts/nas_runs/**
 logs/**
@@ -39,3 +44,21 @@ results/phase6b/*
 !results/phase6b/pilot_resource_summary.csv
 !results/phase6b/task_similarity_gradient_matrix.csv
 !results/phase6b/compatibility_manifest.json
+
+# Phase 7A compact evidence; checkpoints, component dumps, and step audits stay local.
+!results/phase7a/
+results/phase7a/*
+!results/phase7a/phase7a_config.json
+!results/phase7a/pilot_stage_summary.csv
+!results/phase7a/pilot_final_task_metrics.csv
+!results/phase7a/functional_importance_preservation_correlations.csv
+!results/phase7a/functional_importance_rollback_controls.csv
+!results/phase7a/functional_importance_preservation_summary.json
+!results/phase7a/S1/
+!results/phase7a/S2/
+results/phase7a/S[12]/*
+!results/phase7a/S[12]/evaluation_summary.json
+!results/phase7a/S[12]/pilot_manifest.json
+!results/phase7a/S[12]/functional_risk_analysis.json
+!results/phase7a/S[12]/c4_recovery_log.json
+!results/phase7a/S[12]/recovery_log.json

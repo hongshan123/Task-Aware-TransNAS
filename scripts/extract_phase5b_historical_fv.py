@@ -14,6 +14,10 @@ import torch
 import torch.nn.functional as F
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
@@ -35,8 +39,8 @@ from phase5_common import (  # noqa: E402
 )
 
 
-PHASE5B_ROOT = PROJECT_ROOT / "results" / "phase5b"
-PHASE5_FV_ROOT = PROJECT_ROOT / "results" / "phase5" / "fv"
+PHASE5B_ROOT = storage_path("results") / "phase5b"
+PHASE5_FV_ROOT = storage_path("results") / "phase5" / "fv"
 BOUNDARY_MANIFEST = PHASE5B_ROOT / "boundary_replay_manifest.json"
 SNAPSHOTS = [
     ("historical_after_task565", TASK_565, "task565_circa_answer_generation"),

@@ -180,6 +180,9 @@ def train_task_recorded(
     on_checkpoint: Callable[[int, dict[str, Any]], None] | None = None,
     checkpoint_steps: set[int] | None = None,
     on_optimizer_step: Callable[[int, Any], None] | None = None,
+    before_optimizer_step: Callable[[int, Any, torch.optim.Optimizer], None] | None = None,
+    after_optimizer_step: Callable[[int, Any, torch.optim.Optimizer], None] | None = None,
+    on_optimizer_attempt_start: Callable[[int], None] | None = None,
 ) -> dict[str, Any]:
     """Formal-baseline training loop with token-budget and sample-order auditing."""
     torch.manual_seed(seed)
@@ -220,6 +223,8 @@ def train_task_recorded(
         consumed_instance_ids.extend(str(row["instance_id"]) for row in rows)
         retry = 0
         while True:
+            if on_optimizer_attempt_start is not None:
+                on_optimizer_attempt_start(step)
             optimizer.zero_grad(set_to_none=True)
             step_loss = 0.0
             local_tokens = 0
@@ -238,7 +243,13 @@ def train_task_recorded(
                     (loss / grad_accum).backward()
                     step_loss += float(loss.detach().float().item())
                 torch.nn.utils.clip_grad_norm_(model.parameters(), float(training_cfg["max_grad_norm"]))
-                optimizer.step()
+                perform_optimizer_step(
+                    optimizer,
+                    model,
+                    step,
+                    before=before_optimizer_step,
+                    after=after_optimizer_step,
+                )
                 losses.append(step_loss / grad_accum)
                 tokens_per_step.append(local_tokens)
                 truncation_count += local_truncations
@@ -334,3 +345,18 @@ def human_vram() -> dict[str, float]:
 def write_json(path: Path, content: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def perform_optimizer_step(
+    optimizer: torch.optim.Optimizer,
+    model: Any,
+    step: int,
+    before: Callable[[int, Any, torch.optim.Optimizer], None] | None = None,
+    after: Callable[[int, Any, torch.optim.Optimizer], None] | None = None,
+) -> None:
+    """Run one optimizer step with opt-in callbacks around the real parameter update."""
+    if before is not None:
+        before(step, model, optimizer)
+    optimizer.step()
+    if after is not None:
+        after(step, model, optimizer)

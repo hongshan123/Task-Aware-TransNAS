@@ -12,7 +12,11 @@ from run_formal_baseline import parse_yes_no
 from run_phase6a_localization import TASKS, GENERATION_TASKS, activation_candidates
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUT_ROOT = PROJECT_ROOT / "results" / "phase6a"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+OUT_ROOT = storage_path("results") / "phase6a"
 STAGE2 = "results/phase5b/checkpoints/historical_boundary_replay/A0/S1/seed_10/after_2_task1603_smcalflow_sentence_generation"
 STAGE3 = "results/phase6a/checkpoints/after_3_task1501_dstc3_answer_generation"
 

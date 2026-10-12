@@ -10,6 +10,10 @@ from pathlib import Path
 import torch
 
 ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -83,7 +87,7 @@ def main() -> None:
     if any(info["task_id_used_by_router"] for info in eval_routes.values()):
         raise RuntimeError("B2 inference unexpectedly consumed a Task ID")
 
-    state_path = ROOT / "results" / "phase6b" / ".phase6b_state_roundtrip.safetensors"
+    state_path = storage_path("results") / "phase6b" / ".phase6b_state_roundtrip.safetensors"
     _save_state(model, state_path)
     controller.close()
     del model, controller
@@ -129,7 +133,7 @@ def main() -> None:
         "peak_cuda_allocated_bytes": torch.cuda.max_memory_allocated(device),
         "gpu_name": torch.cuda.get_device_name(device),
     }
-    write_json(ROOT / "results" / "phase6b" / "gpu_smoke.json", report)
+    write_json(storage_path("results") / "phase6b" / "gpu_smoke.json", report)
     print(json.dumps(report, ensure_ascii=False, indent=2), flush=True)
 
 

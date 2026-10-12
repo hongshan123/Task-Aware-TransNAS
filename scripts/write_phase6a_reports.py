@@ -13,13 +13,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 if str(PROJECT_ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 from run_formal_baseline import parse_yes_no, rouge_l_f1  # noqa: E402
 
-RESULTS = PROJECT_ROOT / "results" / "phase6a"
-FIGURES = PROJECT_ROOT / "figures" / "phase6a"
-REPORTS = PROJECT_ROOT / "reports"
+RESULTS = storage_path("results") / "phase6a"
+FIGURES = storage_path("figures") / "phase6a"
+REPORTS = storage_path("reports")
 TASKS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",

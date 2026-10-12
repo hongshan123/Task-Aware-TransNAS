@@ -22,6 +22,10 @@ import torch.nn.functional as F
 from safetensors.torch import load_file
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 if str(PROJECT_ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
@@ -38,11 +42,11 @@ from run_formal_baseline import (  # noqa: E402
 )
 
 
-OUT_ROOT = PROJECT_ROOT / "results" / "phase6a"
+OUT_ROOT = storage_path("results") / "phase6a"
 CONFIG_PATH = PROJECT_ROOT / "configs" / "phase6a_component_localization.yaml"
-STAGE2 = PROJECT_ROOT / "results" / "phase5b" / "checkpoints" / "historical_boundary_replay" / "A0" / "S1" / "seed_10" / "after_2_task1603_smcalflow_sentence_generation"
-STAGE3 = PROJECT_ROOT / "results" / "phase6a" / "checkpoints" / "after_3_task1501_dstc3_answer_generation"
-FINAL = PROJECT_ROOT / "results" / "phase4b" / "checkpoints" / "A0" / "S1" / "seed_10"
+STAGE2 = storage_path("results") / "phase5b" / "checkpoints" / "historical_boundary_replay" / "A0" / "S1" / "seed_10" / "after_2_task1603_smcalflow_sentence_generation"
+STAGE3 = storage_path("results") / "phase6a" / "checkpoints" / "after_3_task1501_dstc3_answer_generation"
+FINAL = storage_path("results") / "phase4b" / "checkpoints" / "A0" / "S1" / "seed_10"
 TASKS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",

@@ -18,13 +18,17 @@ import torch
 from safetensors.torch import load_file
 
 ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
 import run_phase6a_localization as phase6a
 from phase4_common import prepare_context
 
-OUT = ROOT / "results" / "phase6b"
+OUT = storage_path("results") / "phase6b"
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:

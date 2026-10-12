@@ -1,0 +1,25 @@
+seed: 10
+steps_per_task: 50
+calibration_samples_per_task: 256
+localization_samples: 256
+layer_ratio: 0.38
+neuron_ratio: 0.40
+rcond: 1.0e-6
+min_ratio: 0.20
+conditions:
+  - C0
+  - C1
+  - C2
+  - C3
+  - C4
+sequences:
+  S1:
+    - task565_circa_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1501_dstc3_answer_generation
+    - task1384_deal_or_no_dialog_classification
+  S2:
+    - task565_circa_answer_generation
+    - task1501_dstc3_answer_generation
+    - task1603_smcalflow_sentence_generation
+    - task1384_deal_or_no_dialog_classification

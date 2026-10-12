@@ -7,9 +7,13 @@ import json
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RESULTS = PROJECT_ROOT / "results" / "phase6a"
-FIGURES = PROJECT_ROOT / "figures" / "phase6a"
-REPORTS = PROJECT_ROOT / "reports"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+RESULTS = storage_path("results") / "phase6a"
+FIGURES = storage_path("figures") / "phase6a"
+REPORTS = storage_path("reports")
 TASKS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",

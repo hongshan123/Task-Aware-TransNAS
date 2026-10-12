@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+try:
+    from .runtime_paths import resolve_config_paths, resolve_runtime_path
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import resolve_config_paths, resolve_runtime_path
 
 from task_aware_transnas.cl.metrics import continual_learning_metrics
 
@@ -31,7 +37,7 @@ def fmt(value: Any) -> str:
     return "—" if value is None or value == "" else f"{float(value):.4f}"
 
 
-def write_report(path: Path, aggregate: dict[str, Any]) -> None:
+def write_report(path: Path, aggregate: dict[str, Any], results_root: Path) -> None:
     lines = [
         "# Continual learning metric audit",
         "",
@@ -39,7 +45,7 @@ def write_report(path: Path, aggregate: dict[str, Any]) -> None:
         "",
         "## Metric definitions",
         "",
-        "- **Raw primary score matrix:** each task retains its own primary score and unit: ROUGE-L F1 for task565/task1603 and Accuracy for task1501/task1384. The matrix is preserved per stream in `D:/Task-Aware-TransNAS/results/baseline_full/metrics.json`; the CSV has one raw-score column per task. Raw Accuracy and raw ROUGE-L are never averaged together.",
+        f"- **Raw primary score matrix:** each task retains its own primary score and unit: ROUGE-L F1 for task565/task1603 and Accuracy for task1501/task1384. The matrix is preserved per stream in `{results_root / 'metrics.json'}`; the CSV has one raw-score column per task. Raw Accuracy and raw ROUGE-L are never averaged together.",
         "- **Normalized gain:** for task *t* at stage *s*, `(score[t,s] − baseline[t]) / max(1 − baseline[t], 1e−8)`. The per-task matrix is preserved for every stage. The existing all-task mean normalized gain is also preserved, including unlearned tasks, under its historical field name and the clearer `mean_normalized_gain_all_tasks` alias.",
         "- **Nonnegative average forgetting:** for each previously learned task, take `max(0, best post-acquisition normalized gain so far − current normalized gain)`, then average the task-level clipped drops. An improvement on one task cannot cancel forgetting on another.",
         "- **Backward transfer (BWT):** for each previously learned task, current normalized gain minus its normalized gain immediately after that task was learned; average across prior tasks. Positive values indicate later stages improved the earlier task relative to its acquisition-stage score.",
@@ -104,7 +110,7 @@ def write_report(path: Path, aggregate: dict[str, Any]) -> None:
             "",
             "The implementation is in `src/task_aware_transnas/cl/metrics.py`; its 9 focused tests pass via `python -m unittest discover -s tests -p \"test_cl_metrics.py\"`.",
             "",
-            "Machine-readable outputs: `D:/Task-Aware-TransNAS/results/baseline_full/metrics.json`, each sequence's `metrics.json` (`cl_metric_audit` plus unchanged `legacy_cl_summary`), and the expanded `accuracy_matrix.csv`.",
+            f"Machine-readable outputs: `{results_root / 'metrics.json'}`, each sequence's `metrics.json` (`cl_metric_audit` plus unchanged `legacy_cl_summary`), and the expanded `accuracy_matrix.csv`.",
             "",
         ]
     )
@@ -113,8 +119,17 @@ def write_report(path: Path, aggregate: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    config = yaml.safe_load((PROJECT_ROOT / "configs" / "continual_baseline_full.yaml").read_text(encoding="utf-8"))
-    results_root = Path(config["storage"]["results"])
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config", type=Path, default=PROJECT_ROOT / "configs" / "continual_baseline_full_linux.yaml"
+    )
+    args = parser.parse_args()
+    config_path = resolve_runtime_path(args.config, project_root=PROJECT_ROOT)
+    config = resolve_config_paths(
+        yaml.safe_load(config_path.read_text(encoding="utf-8")), project_root=PROJECT_ROOT
+    )
+    results_root = resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT)
     task_ids = list(config["dataset"]["tasks"])
     metric_by_task = {
         task_id: config["dataset"]["task_types"][task_id]["primary_metric"] for task_id in task_ids
@@ -213,11 +228,15 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
 
-    write_report(PROJECT_ROOT / "reports" / "metric_audit.md", aggregate)
+    report_path = resolve_runtime_path(
+        config.get("reports", {}).get("metric_audit_path", "reports/metric_audit.md"),
+        project_root=PROJECT_ROOT,
+    )
+    write_report(report_path, aggregate, results_root)
 
     print(f"Updated per-sequence audit metrics and aggregate: {results_root / 'metrics.json'}")
     print(f"Updated matrix: {csv_path} ({len(rows)} rows)")
-    print(f"Report: {PROJECT_ROOT / 'reports' / 'metric_audit.md'}")
+    print(f"Report: {report_path}")
 
 
 if __name__ == "__main__":

@@ -13,16 +13,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import torch
 import yaml
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-STORAGE_ROOT = Path("D:/Task-Aware-TransNAS")
-os.environ.setdefault("HF_HOME", str(STORAGE_ROOT / "cache" / "huggingface"))
-os.environ.setdefault("HF_HUB_CACHE", str(STORAGE_ROOT / "cache" / "huggingface" / "hub"))
+try:
+    from .runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+STORAGE_ROOT = storage_root(PROJECT_ROOT)
+configure_cache_environment(PROJECT_ROOT)
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -309,21 +314,27 @@ def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env", override=False)
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
-    config = yaml.safe_load((PROJECT_ROOT / "configs" / "continual_baseline.yaml").read_text(encoding="utf-8"))
-    data_root = Path(config["dataset"]["processed_dir"])
+    config = resolve_config_paths(
+        yaml.safe_load((PROJECT_ROOT / "configs" / "continual_baseline.yaml").read_text(encoding="utf-8")),
+        project_root=PROJECT_ROOT,
+    )
+    data_root = resolve_runtime_path(config["dataset"]["processed_dir"], project_root=PROJECT_ROOT)
     manifest = json.loads((data_root / "data_manifest.json").read_text(encoding="utf-8"))
     task_infos = manifest["tasks"]
     task_ids = [task["task_id"] for task in task_infos]
-    result_root = Path(config["storage"]["results"]) / "pilot_audit"
+    result_root = resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT) / "pilot_audit"
     result_root.mkdir(parents=True, exist_ok=True)
-    checkpoint_root = Path(config["storage"]["checkpoints"]) / "baseline_pilot"
+    checkpoint_root = resolve_runtime_path(config["storage"]["checkpoints"], project_root=PROJECT_ROOT) / "baseline_pilot"
     stage_specs = [("baseline", checkpoint_root / "initial_base_model")]
     stage_specs.extend(
         (f"after_{i}_{task_id}", checkpoint_root / f"stage_{i}_{task_id}")
         for i, task_id in enumerate(task_ids, start=1)
     )
 
-    tests = {task["task_id"]: read_jsonl(Path(task["split_files"]["test"])) for task in task_infos}
+    tests = {
+        task["task_id"]: read_jsonl(resolve_runtime_path(task["split_files"]["test"], project_root=PROJECT_ROOT))
+        for task in task_infos
+    }
     sample_ids: dict[str, set[str]] = {}
     for index, task_id in enumerate(task_ids):
         sample_indices = random.Random(AUDIT_SAMPLE_SEED + index).sample(range(len(tests[task_id])), AUDIT_SAMPLE_N)
@@ -332,9 +343,7 @@ def main() -> None:
     model_value = os.environ.get(config["model"]["env_var"])
     if not model_value:
         raise EnvironmentError("MODEL_DIR is missing from the project .env")
-    model_path = Path(model_value)
-    if not model_path.is_absolute():
-        model_path = (PROJECT_ROOT / model_path).resolve()
+    model_path = resolve_runtime_path(model_value, project_root=PROJECT_ROOT)
     tokenizer = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True, trust_remote_code=False)
     if args.refresh_diagnostics_only:
         refresh_existing_diagnostics(tokenizer, task_infos, data_root, config)
@@ -344,7 +353,7 @@ def main() -> None:
     torch.cuda.set_device(0)
     device = torch.device("cuda:0")
     eos_ids = set(tokenizer.eos_token_id if isinstance(tokenizer.eos_token_id, list) else [tokenizer.eos_token_id])
-    original_predictions_root = Path(config["storage"]["results"]) / "baseline_pilot" / "predictions"
+    original_predictions_root = resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT) / "baseline_pilot" / "predictions"
     all_rows: list[dict[str, Any]] = []
     metrics: dict[str, dict[str, dict[str, Any]]] = {}
     consistency: dict[str, dict[str, Any]] = {}
@@ -488,7 +497,7 @@ def main() -> None:
     total_seconds = time.perf_counter() - start_wall
     audit_metrics = {
         "created_utc": datetime.now(timezone.utc).isoformat(),
-        "source_pilot_metrics": str(Path(config["storage"]["results"]) / "baseline_pilot" / "metrics.json"),
+        "source_pilot_metrics": str(resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT) / "baseline_pilot" / "metrics.json"),
         "data_manifest": str(data_root / "data_manifest.json"),
         "source_commit": manifest["source"]["commit"],
         "seed_for_audit_sampling": AUDIT_SAMPLE_SEED,
@@ -531,7 +540,7 @@ def refresh_existing_diagnostics(
     data_root: Path,
     config: dict[str, Any],
 ) -> None:
-    result_root = Path(config["storage"]["results"]) / "pilot_audit"
+    result_root = resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT) / "pilot_audit"
     all_path = result_root / "all_predictions.jsonl"
     samples_path = result_root / "audit_samples.jsonl"
     metrics_path = result_root / "metrics.json"
@@ -550,7 +559,7 @@ def refresh_existing_diagnostics(
         task_id = task["task_id"]
         split_diagnostics[task_id] = {}
         for split in ("train", "dev", "test"):
-            data_rows = read_jsonl(Path(task["split_files"][split]))
+            data_rows = read_jsonl(resolve_runtime_path(task["split_files"][split], project_root=PROJECT_ROOT))
             stats = {
                 "examples": len(data_rows),
                 "prompt_truncated_count": 0,

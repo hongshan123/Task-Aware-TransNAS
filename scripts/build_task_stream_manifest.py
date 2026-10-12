@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import argparse
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .runtime_paths import resolve_config_paths, resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import resolve_config_paths, resolve_runtime_path, storage_root
 
 
 def sha256_text(values: list[str]) -> str:
@@ -22,11 +29,27 @@ def sha256_file(path: Path) -> str:
 
 
 def main() -> None:
-    config_path = PROJECT_ROOT / "configs" / "continual_baseline_full.yaml"
-    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-    data_root = Path(config["dataset"]["processed_dir"])
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=PROJECT_ROOT / "configs" / "continual_baseline_full_linux.yaml",
+    )
+    parser.add_argument("--relation-analysis", type=Path, default=None)
+    parser.add_argument("--output", type=Path, default=None)
+    args = parser.parse_args()
+    config_path = resolve_runtime_path(args.config, project_root=PROJECT_ROOT)
+    config = resolve_config_paths(
+        yaml.safe_load(config_path.read_text(encoding="utf-8")), project_root=PROJECT_ROOT
+    )
+    data_root = resolve_runtime_path(config["dataset"]["processed_dir"], project_root=PROJECT_ROOT)
     data_manifest = json.loads((data_root / "data_manifest.json").read_text(encoding="utf-8"))
-    relation_path = Path("D:/Task-Aware-TransNAS/data/task_selection/task_relation_analysis.json")
+    relation_path = resolve_runtime_path(
+        args.relation_analysis
+        or storage_root(PROJECT_ROOT) / "data" / "task_selection" / "task_relation_analysis.json",
+        project_root=PROJECT_ROOT,
+    )
     relations = json.loads(relation_path.read_text(encoding="utf-8"))
 
     task_infos = {entry["task_id"]: entry for entry in data_manifest["tasks"]}
@@ -117,10 +140,20 @@ def main() -> None:
     if not leakage_ok:
         raise ValueError("Split leakage check failed")
 
-    destination = PROJECT_ROOT / "data" / "task_stream_manifest.json"
+    destination = resolve_runtime_path(
+        args.output or config["dataset"].get("task_stream_manifest", "data/task_stream_manifest.json"),
+        project_root=PROJECT_ROOT,
+    )
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (data_root / "task_stream_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    data_manifest_destination = resolve_runtime_path(
+        config["dataset"].get("manifest_data_path", "data/task_stream_manifest.json"),
+        project_root=PROJECT_ROOT,
+    )
+    data_manifest_destination.parent.mkdir(parents=True, exist_ok=True)
+    data_manifest_destination.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(f"Task stream manifest: {destination}")
     print(f"Leakage check: {'PASS' if leakage_ok else 'FAIL'}")
     for task in output_tasks:

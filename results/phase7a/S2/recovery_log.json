@@ -1,0 +1,24 @@
+{
+  "sequence": "S2",
+  "condition": "C2",
+  "failed_stage": 1,
+  "failed_task": "task565_circa_answer_generation",
+  "failure": "CUDA out of memory on the first optimizer step while co-located training occupied nearly all GPU 1 memory; retries at max sequence lengths 512, 448, 384, and 320 all failed.",
+  "completed_conditions_preserved": [
+    "C0",
+    "C1"
+  ],
+  "partial_attempt_archived_at": "results/phase7a/S2/C2_attempt1_oom_20261011T1500",
+  "checkpoint_written_for_failed_condition": false,
+  "dev_or_test_files_opened": false,
+  "recovery": "The pilot runner now reuses completed C0/C1 training summaries and refuses to overwrite incomplete condition directories. Resume C2 after adequate GPU memory is available.",
+  "recovery_status": "resumed",
+  "resumed_utc": "2026-10-11T07:03:12Z",
+  "completed_after_resume": [
+    "C2/task565_circa_answer_generation",
+    "C2/task1501_dstc3_answer_generation",
+    "C2/task1603_smcalflow_sentence_generation",
+    "C2/task1384_deal_or_no_dialog_classification"
+  ],
+  "resume_note": "C2 resumed successfully from a clean condition directory after GPU memory pressure eased; all four tasks completed with 50 optimizer steps at max_sequence_length 512."
+}

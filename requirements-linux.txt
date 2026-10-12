@@ -1,0 +1,29 @@
+# Linux x86_64, Python 3.11, NVIDIA Blackwell (compute capability 12.0).
+# PyTorch comes from the official CUDA 13.2 wheel index; the driver is managed
+# by the host and is not modified by this environment.
+--extra-index-url https://download.pytorch.org/whl/cu132
+torch==2.14.1+cu132
+
+# Top-level project and requested model-training dependencies. Resolve the
+# Linux wheels in the transnas environment instead of applying requirements.txt,
+# which is a Windows-only resolved lock.
+transformers>=5.16,<6
+accelerate>=1.14,<2
+datasets>=5,<6
+trl>=1.14,<2
+peft>=0.21,<1
+evaluate>=0.4.6,<0.5
+safetensors>=0.8,<0.9
+sentencepiece>=0.2.2,<0.3
+python-dotenv>=1.2,<2
+PyYAML>=6,<7
+
+# Analysis, plotting, report and verification dependencies used by the project.
+numpy>=2,<3
+pandas>=2.2,<4
+scipy>=1.14,<2
+scikit-learn>=1.5,<2
+matplotlib>=3.8,<4
+seaborn>=0.13,<0.14
+pytest>=9,<10
+PyMuPDF>=1.27,<2

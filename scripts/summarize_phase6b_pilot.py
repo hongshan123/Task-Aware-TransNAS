@@ -31,9 +31,13 @@ from phase6b_modules import select_random_post_layers
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "results" / "phase6b"
-FIGURES = ROOT / "figures" / "phase6b"
-REPORTS = ROOT / "reports"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+OUT = storage_path("results") / "phase6b"
+FIGURES = storage_path("figures") / "phase6b"
+REPORTS = storage_path("reports")
 SEQUENCES = ("S1", "S2")
 ARCHITECTURES = ("B0", "B1-static", "B2-input", "B3-oracle", "B2-random-location")
 TASKS = (
@@ -163,7 +167,7 @@ def load_run(sequence: str, architecture: str) -> dict[str, Any]:
         raise RuntimeError(f"Test split flag is not false: {sequence}/{architecture}")
 
     if architecture == "B0":
-        source_path = ROOT / "results" / "phase4b" / "runs" / "A0" / sequence / "seed_10" / "metrics.json"
+        source_path = storage_path("results") / "phase4b" / "runs" / "A0" / sequence / "seed_10" / "metrics.json"
         metric_source = read_json(source_path)
         if metric_source.get("test_split_loaded") is not False:
             raise RuntimeError(f"Baseline test split flag is not false: {source_path}")
@@ -767,7 +771,7 @@ def consolidate_manifest(runs: dict[tuple[str, str], dict[str, Any]]) -> None:
     pilot_runs = {}
     baseline_reused = {}
     for sequence in SEQUENCES:
-        a0_path = ROOT / "results" / "phase4b" / "runs" / "A0" / sequence / "seed_10" / "metrics.json"
+        a0_path = storage_path("results") / "phase4b" / "runs" / "A0" / sequence / "seed_10" / "metrics.json"
         a0 = read_json(a0_path)
         baseline_reused[sequence] = {
             "source_metrics": str(a0_path),

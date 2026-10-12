@@ -15,8 +15,12 @@ import transformers
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ROOT = PROJECT_ROOT / "results" / "phase5b"
-REPORT = PROJECT_ROOT / "reports" / "phase5b_fv_recovery.md"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+ROOT = storage_path("results") / "phase5b"
+REPORT = storage_path("reports") / "phase5b_fv_recovery.md"
 
 SHORT = {
     "task565_circa_answer_generation": "565",

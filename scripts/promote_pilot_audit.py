@@ -7,8 +7,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .runtime_paths import storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import storage_root
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -20,15 +25,16 @@ def write_json(path: Path, value: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
     audit_script = PROJECT_ROOT / "scripts" / "audit_pilot.py"
     spec = importlib.util.spec_from_file_location("audit_pilot", audit_script)
     audit_module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
     spec.loader.exec_module(audit_module)
 
-    d_root = Path("D:/Task-Aware-TransNAS")
-    pilot_root = d_root / "results" / "baseline_pilot"
-    audit_root = d_root / "results" / "pilot_audit"
+    data_root = storage_root(PROJECT_ROOT)
+    pilot_root = data_root / "results" / "baseline_pilot"
+    audit_root = data_root / "results" / "pilot_audit"
     run = read_json(pilot_root / "metrics.json")
     audit = read_json(audit_root / "metrics.json")
     if "legacy_pilot_scores" not in run:

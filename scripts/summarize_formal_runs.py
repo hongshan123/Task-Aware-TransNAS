@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import math
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .runtime_paths import resolve_config_paths, resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import resolve_config_paths, resolve_runtime_path, storage_root
 SEQUENCE_NAMES = ["homogeneous", "heterogeneous", "mixed"]
 
 
@@ -23,13 +29,25 @@ def clean(value: Any) -> Any:
 
 
 def main() -> None:
-    config_path = PROJECT_ROOT / "configs" / "continual_baseline_full.yaml"
-    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-    results_root = Path(config["storage"]["results"])
-    manifest_path = Path(config["dataset"]["processed_dir"]) / "data_manifest.json"
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config", type=Path, default=PROJECT_ROOT / "configs" / "continual_baseline_full_linux.yaml"
+    )
+    args = parser.parse_args()
+    config_path = resolve_runtime_path(args.config, project_root=PROJECT_ROOT)
+    config = resolve_config_paths(
+        yaml.safe_load(config_path.read_text(encoding="utf-8")), project_root=PROJECT_ROOT
+    )
+    results_root = resolve_runtime_path(config["storage"]["results"], project_root=PROJECT_ROOT)
+    manifest_path = resolve_runtime_path(config["dataset"]["processed_dir"], project_root=PROJECT_ROOT) / "data_manifest.json"
     data_manifest = read_json(manifest_path)
-    stream_manifest = read_json(PROJECT_ROOT / "data" / "task_stream_manifest.json")
-    relation_path = Path("D:/Task-Aware-TransNAS/data/task_selection/task_relation_analysis.json")
+    stream_manifest_path = resolve_runtime_path(
+        config["dataset"].get("task_stream_manifest", "data/task_stream_manifest.json"),
+        project_root=PROJECT_ROOT,
+    )
+    stream_manifest = read_json(stream_manifest_path)
+    relation_path = storage_root(PROJECT_ROOT) / "data" / "task_selection" / "task_relation_analysis.json"
     relations = read_json(relation_path)
     tuning = read_json(results_root / "tuning" / "tuning_results.json")
     task_ids = list(config["dataset"]["tasks"])
@@ -171,7 +189,7 @@ def main() -> None:
         f"- Formal prompt maximum: {config['model']['max_sequence_length']} tokens; complete task definition retained, long input tails truncated. Every evaluated prediction passed the task-definition preservation assertion.",
         f"- Model: local `{runs['homogeneous']['model_path']}`; CUDA device `{runs['homogeneous']['device']}`; {runs['homogeneous']['total_parameters']:,} / {runs['homogeneous']['trainable_parameters']:,} parameters trainable.",
         f"- Frozen hyperparameters: learning rate `{config['training']['learning_rate']}`; `{config['training']['steps_per_task']}` optimizer steps per task; gradient accumulation `{config['training']['gradient_accumulation_steps']}`; weight decay `{config['training']['weight_decay']}`.",
-        "- Hyperparameters were selected from a 3-by-3 development-only grid after the homogeneous tuning sequence; the frozen selection and all candidate metrics are in `D:/Task-Aware-TransNAS/results/baseline_full/tuning/tuning_results.json`.",
+        f"- Hyperparameters were selected from a 3-by-3 development-only grid after the homogeneous tuning sequence; the frozen selection and all candidate metrics are in `{results_root / 'tuning' / 'tuning_results.json'}`.",
         "- The test set was opened after the tuning decision was frozen. No test results were used to adjust the tasks, task order, or training parameters.",
         "",
         "### Development-only tuning grid",
@@ -245,17 +263,20 @@ def main() -> None:
             "",
             "## Artifacts",
             "",
-            "- `D:/Task-Aware-TransNAS/results/baseline_full/accuracy_matrix.csv`: combined 15-stage-by-4-task metrics.",
-            "- `D:/Task-Aware-TransNAS/results/baseline_full/validation_summary.json`: test ID, matrix, checkpoint, parameter-count, and OOM verification.",
-            "- `D:/Task-Aware-TransNAS/results/baseline_full/tuning/tuning_results.json`: dev-only candidate results.",
-            "- `D:/Task-Aware-TransNAS/results/baseline_full/{homogeneous,heterogeneous,mixed}/`: per-sequence predictions, metrics, reports, and loss curves.",
-            "- `D:/Task-Aware-TransNAS/checkpoints/baseline_full/{homogeneous,heterogeneous,mixed}/`: one checkpoint per task boundary.",
+            f"- `{results_root / 'accuracy_matrix.csv'}`: combined 15-stage-by-4-task metrics.",
+            f"- `{results_root / 'validation_summary.json'}`: test ID, matrix, checkpoint, parameter-count, and OOM verification.",
+            f"- `{results_root / 'tuning' / 'tuning_results.json'}`: dev-only candidate results.",
+            f"- `{results_root}/{{homogeneous,heterogeneous,mixed}}/`: per-sequence predictions, metrics, reports, and loss curves.",
+            f"- `{Path(config['storage']['checkpoints'])}/{{homogeneous,heterogeneous,mixed}}/`: one checkpoint per task boundary.",
             "",
             "The wide machine-readable artifact retains each task metric separately and is the source for reproducing the tables above.",
             "",
         ]
     )
-    analysis_path = PROJECT_ROOT / "reports" / "baseline_full_analysis.md"
+    analysis_path = resolve_runtime_path(
+        config.get("reports", {}).get("analysis_report_path", "reports/baseline_full_analysis.md"),
+        project_root=PROJECT_ROOT,
+    )
     analysis_path.write_text("\n".join(report), encoding="utf-8")
     summary_json = {
         "validation": validation,

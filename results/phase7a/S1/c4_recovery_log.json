@@ -1,0 +1,41 @@
+{
+  "sequence": "S1",
+  "condition": "C4",
+  "failed_stage": 3,
+  "failed_task": "task1603_smcalflow_sentence_generation",
+  "failure": "ZeroDivisionError while auditing a module whose strict correction yielded a zero parameter update; no failure occurred in the optimizer update or training loss.",
+  "completed_conditions_preserved": [
+    "C0",
+    "C1",
+    "C2",
+    "C3"
+  ],
+  "partial_attempt_archived_at": "S1/C4_attempt1_zero_update_crash_20261011T1543",
+  "completed_c4_tasks": 2,
+  "steps_per_completed_task": 50,
+  "dev_or_test_files_opened": false,
+  "recovery": "Handle zero update norms explicitly, use a tighter double-precision nullspace cutoff, and fail closed by rolling back any corrected update still above the declared residual tolerance.",
+  "recovery_status": "recovered",
+  "rerun_started_utc": "2026-10-11T07:47:00Z",
+  "reused_completed_conditions": [
+    "C0",
+    "C1",
+    "C2",
+    "C3"
+  ],
+  "rerun_completed_tasks": [
+    "task565_circa_answer_generation",
+    "task1603_smcalflow_sentence_generation",
+    "task1501_dstc3_answer_generation",
+    "task1384_deal_or_no_dialog_classification"
+  ],
+  "optimizer_steps_per_task": 50,
+  "rerun_max_sequence_length": 512,
+  "audit_rows": 15400,
+  "max_normalized_history_activation_residual": 6.456713209440778e-07,
+  "activation_violation_rows": 0,
+  "mask_violation_rows": 0,
+  "fail_closed_module_step_rollbacks": 1398,
+  "evaluation_split": "dev",
+  "test_split_files_opened": []
+}

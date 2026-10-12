@@ -27,10 +27,14 @@ from run_formal_baseline import load_model, save_checkpoint
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PHASE5B_ROOT = PROJECT_ROOT / "results" / "phase5b"
-ORIGINAL_RUN = PROJECT_ROOT / "results" / "phase4b" / "runs" / "A0" / "S1" / "seed_10" / "metrics.json"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+PHASE5B_ROOT = storage_path("results") / "phase5b"
+ORIGINAL_RUN = storage_path("results") / "phase4b" / "runs" / "A0" / "S1" / "seed_10" / "metrics.json"
 ORIGINAL_CHECKPOINT = (
-    PROJECT_ROOT / "results" / "phase4b" / "checkpoints" / "A0" / "S1" / "seed_10" / "model.safetensors"
+    storage_path("results") / "phase4b" / "checkpoints" / "A0" / "S1" / "seed_10" / "model.safetensors"
 )
 REPLAY_ROOT = PHASE5B_ROOT / "checkpoints" / "historical_boundary_replay" / "A0" / "S1" / "seed_10"
 MANIFEST_PATH = PHASE5B_ROOT / "boundary_replay_manifest.json"

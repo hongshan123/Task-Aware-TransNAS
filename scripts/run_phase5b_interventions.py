@@ -19,6 +19,10 @@ import torch
 import torch.nn.functional as F
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
@@ -55,8 +59,8 @@ from phase5_common import answer_tokens_for_custom, make_complete_ids, token_pro
 from run_formal_baseline import answer_tokens_for, safe_prompt  # noqa: E402
 
 
-OUT_ROOT = PROJECT_ROOT / "results" / "phase5b" / "interventions"
-VECTOR_PATH = PROJECT_ROOT / "results" / "phase5b" / "extraction" / "historical_function_vectors.pt"
+OUT_ROOT = storage_path("results") / "phase5b" / "interventions"
+VECTOR_PATH = storage_path("results") / "phase5b" / "extraction" / "historical_function_vectors.pt"
 PHASE5_VECTOR_PATH = PHASE5_ROOT / "fv" / "function_vectors.pt"
 FINAL_CHECKPOINT = phase4b_checkpoint("A0", "S1", 10)
 LAYERS = (5, 12, 19, 26)

@@ -14,6 +14,10 @@ import torch
 from safetensors.torch import load_file
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
@@ -24,10 +28,10 @@ from run_formal_baseline import load_model, safe_task_seed, save_checkpoint  # n
 from phase4_common import train_task_recorded  # noqa: E402
 
 
-ORIGINAL_RUN = PROJECT_ROOT / "results" / "phase4b" / "runs" / "A0" / "S1" / "seed_10" / "metrics.json"
-STAGE2 = PROJECT_ROOT / "results" / "phase5b" / "checkpoints" / "historical_boundary_replay" / "A0" / "S1" / "seed_10" / f"after_2_{TASK_IDS[1]}"
-OUTPUT = PROJECT_ROOT / "results" / "phase6a" / "checkpoints" / f"after_3_{TASK_IDS[2]}"
-MANIFEST = PROJECT_ROOT / "results" / "phase6a" / "checkpoints" / "after_task1501_replay_manifest.json"
+ORIGINAL_RUN = storage_path("results") / "phase4b" / "runs" / "A0" / "S1" / "seed_10" / "metrics.json"
+STAGE2 = storage_path("results") / "phase5b" / "checkpoints" / "historical_boundary_replay" / "A0" / "S1" / "seed_10" / f"after_2_{TASK_IDS[1]}"
+OUTPUT = storage_path("results") / "phase6a" / "checkpoints" / f"after_3_{TASK_IDS[2]}"
+MANIFEST = storage_path("results") / "phase6a" / "checkpoints" / "after_task1501_replay_manifest.json"
 TASK_ID = TASK_IDS[2]
 EXPECTED_STEPS = 50
 TOLERANCE = 1e-5
@@ -60,7 +64,7 @@ def main() -> None:
 
     config, model_path, tokenizer, device, train, _dev = prepare_context()
     original = json.loads(ORIGINAL_RUN.read_text(encoding="utf-8"))
-    phase5b_manifest = json.loads((PROJECT_ROOT / "results" / "phase5b" / "boundary_replay_manifest.json").read_text(encoding="utf-8"))
+    phase5b_manifest = json.loads((storage_path("results") / "phase5b" / "boundary_replay_manifest.json").read_text(encoding="utf-8"))
     if phase5b_manifest.get("status") != "complete" or not phase5b_manifest["final_weight_comparison"].get("matches_within_tolerance"):
         raise RuntimeError("Phase 5B same-trajectory replay is not certified complete")
     if original.get("architecture") != "A0" or original.get("sequence_name") != "S1" or original.get("seed") != 10:
@@ -75,10 +79,10 @@ def main() -> None:
     if phase5b_manifest.get("train_instance_id_sha256_by_task") != train_hashes:
         raise RuntimeError("Phase 5B replay and current task stream have different training IDs")
 
-    required_bytes = (PROJECT_ROOT / "results" / "phase4b" / "checkpoints" / "A0" / "S1" / "seed_10" / "model.safetensors").stat().st_size + 1024**3
+    required_bytes = (storage_path("results") / "phase4b" / "checkpoints" / "A0" / "S1" / "seed_10" / "model.safetensors").stat().st_size + 1024**3
     free_bytes = shutil.disk_usage(OUTPUT.anchor).free
     preflight = {
-        "source_phase5b_replay_manifest": str(PROJECT_ROOT / "results" / "phase5b" / "boundary_replay_manifest.json"),
+        "source_phase5b_replay_manifest": str(storage_path("results") / "phase5b" / "boundary_replay_manifest.json"),
         "resume_checkpoint": str(STAGE2),
         "resume_checkpoint_sha256": sha256_file(STAGE2 / "model.safetensors"),
         "output_checkpoint": str(OUTPUT),

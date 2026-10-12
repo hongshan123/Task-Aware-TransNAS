@@ -1,4 +1,4 @@
-"""Shared causal-analysis utilities for Phase 5 (Windows, local-only inference)."""
+"""Shared causal-analysis utilities for Phase 5 (cross-platform, local-only inference)."""
 
 from __future__ import annotations
 
@@ -19,6 +19,10 @@ from safetensors.torch import load_file
 from transformers import AutoTokenizer
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
@@ -54,9 +58,9 @@ TASK_1501 = "task1501_dstc3_answer_generation"
 TASK_565 = "task565_circa_answer_generation"
 TASK_1603 = "task1603_smcalflow_sentence_generation"
 SYSTEM_TEXT = "You are an instruction-following assistant. Follow the task definition and return only the requested answer."
-PHASE5_ROOT = PROJECT_ROOT / "results" / "phase5"
-FIGURE_ROOT = PROJECT_ROOT / "figures" / "phase5"
-REPORT_ROOT = PROJECT_ROOT / "reports"
+PHASE5_ROOT = storage_path("results") / "phase5"
+FIGURE_ROOT = storage_path("figures") / "phase5"
+REPORT_ROOT = storage_path("reports")
 MAX_ICL_PROMPT_TOKENS = 2048
 ICL_SHOTS = 4
 SPLITS = {"build": (0, 10), "tune": (10, 25), "evaluation": (25, 50)}
@@ -101,7 +105,7 @@ def stage_checkpoint_specs() -> list[dict[str, Any]]:
             {
                 "checkpoint_id": f"homogeneous_stage_{stage_no}",
                 "architecture": "A0",
-                "path": PROJECT_ROOT / "checkpoints" / "baseline_full" / "homogeneous" / folder,
+                "path": storage_path("checkpoints") / "baseline_full" / "homogeneous" / folder,
                 "stage": stage_no,
                 "task": task_id,
             }
@@ -110,7 +114,7 @@ def stage_checkpoint_specs() -> list[dict[str, Any]]:
 
 
 def phase4b_checkpoint(architecture: str = "A0", sequence: str = "S1", seed: int = 10) -> Path:
-    return PROJECT_ROOT / "results" / "phase4b" / "checkpoints" / architecture / sequence / f"seed_{seed}"
+    return storage_path("results") / "phase4b" / "checkpoints" / architecture / sequence / f"seed_{seed}"
 
 
 def load_checkpoint(model_path: Path, checkpoint_path: Path | None, architecture: str = "A0"):

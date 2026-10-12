@@ -17,16 +17,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-STORAGE_ROOT = Path("D:/Task-Aware-TransNAS")
-os.environ.setdefault("HF_HOME", str(STORAGE_ROOT / "cache" / "huggingface"))
-os.environ.setdefault("HF_HUB_CACHE", str(STORAGE_ROOT / "cache" / "huggingface" / "hub"))
-os.environ.setdefault("HF_DATASETS_CACHE", str(STORAGE_ROOT / "cache" / "huggingface" / "datasets"))
+try:
+    from .runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import configure_cache_environment, resolve_config_paths, resolve_runtime_path, storage_root
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+STORAGE_ROOT = storage_root(PROJECT_ROOT)
+configure_cache_environment(PROJECT_ROOT)
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import torch
 import yaml
-from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -531,16 +536,17 @@ def mean_metric(stage: dict[str, dict[str, Any]], task_ids: list[str], kind: str
 
 
 def load_project_config(path: Path) -> dict[str, Any]:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+    config_path = resolve_runtime_path(path, project_root=PROJECT_ROOT)
+    return resolve_config_paths(
+        yaml.safe_load(config_path.read_text(encoding="utf-8")), project_root=PROJECT_ROOT
+    )
 
 
 def resolved_model_path(config: dict[str, Any]) -> Path:
     model_value = os.environ.get(config["model"]["env_var"])
     if not model_value:
         raise EnvironmentError(f"Set {config['model']['env_var']} in the project .env file")
-    path = Path(model_value)
-    if not path.is_absolute():
-        path = (PROJECT_ROOT / path).resolve()
+    path = resolve_runtime_path(model_value, project_root=PROJECT_ROOT)
     if not path.is_dir():
         raise FileNotFoundError(f"Local model directory not found: {path}")
     return path

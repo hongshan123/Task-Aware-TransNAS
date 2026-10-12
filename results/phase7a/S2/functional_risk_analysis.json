@@ -1,0 +1,17 @@
+{
+  "sequence": "S2",
+  "opened_split_paths": [
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1501_dstc3_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task565_circa_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1501_dstc3_answer_generation/dev.jsonl",
+    "/home/hongzhijun/projects/Task-Aware-TransNAS/data/processed/citb_formal_4tasks/task1603_smcalflow_sentence_generation/dev.jsonl"
+  ],
+  "test_split_files_opened": [],
+  "official_parsp": {
+    "repository": "https://github.com/JinhuiBot/PaRSP",
+    "commit": "00685fe4f9086f03ac1d1a725dcb280714e6125a",
+    "working_tree": "clean"
+  }
+}

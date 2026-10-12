@@ -1,0 +1,25 @@
+{
+  "sequence": "S1",
+  "seed": 10,
+  "conditions": [
+    "C0",
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "c4_inclusion_reason": {
+    "mask_violation_rows": 11000,
+    "max_mask_out_update_ratio": 0.8061544662775736,
+    "activation_violation_rows": 11550,
+    "max_normalized_history_activation_residual": 0.03881735076689494,
+    "thresholds": {
+      "mask_out_update_ratio": 1e-08,
+      "normalized_history_activation_residual": 1e-06
+    }
+  },
+  "evaluation_splits_loaded": [
+    "dev"
+  ],
+  "test_split_files_opened": []
+}

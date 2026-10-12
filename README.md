@@ -1,6 +1,35 @@
 # Task-Aware-TransNAS
 
-Windows research workspace for task-aware Transformer neural architecture search (NAS) and language-model continual learning (CL).
+Research workspace for task-aware Transformer neural architecture search (NAS) and language-model continual learning (CL). Windows remains supported; the Linux setup below targets the RTX PRO 6000 Blackwell workstation.
+
+## Linux setup (RTX PRO 6000 Blackwell)
+
+Create the Python 3.11 environment, install the Linux CUDA 13.2 PyTorch build and project dependencies, then install the repository package:
+
+```bash
+conda env create -f environment-linux.yml
+conda run -n transnas python -m pip install -r requirements-linux.txt
+conda run -n transnas python -m pip install -e . --no-deps
+```
+
+Download the public Qwen3-0.6B files, verify the weight checksum, then copy the offline environment template and confirm `MODEL_DIR` points to `model/qwen3-0.6b`. The model is loaded locally by the verification scripts:
+
+```bash
+conda run -n transnas hf download Qwen/Qwen3-0.6B --local-dir model/qwen3-0.6b
+sha256sum model/qwen3-0.6b/model.safetensors
+cp .env.linux.example .env
+conda run -n transnas python scripts/smoke_inference.py
+```
+
+Set `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, and `HF_DATASETS_OFFLINE=1` in `.env` after the download. Prepare the deterministic four-task dataset and run the isolated, train-only GPU smoke checks with:
+
+```bash
+conda run -n transnas python scripts/prepare_citb.py --config configs/continual_baseline_full_linux.yaml
+conda run -n transnas python scripts/run_training_smoke.py --steps 10 --output-dir runs/smoke/manual
+bash scripts/run_dual_gpu_experiments.sh
+```
+
+The dual-GPU launcher runs two independent one-GPU jobs, each capped at ten optimizer steps, and writes separate logs, metrics, and save/restore checkpoints below `runs/parallel/`. It does not start the formal baseline or NAS search. The root `requirements.txt` remains the historical Windows lock; use `requirements-linux.txt` on Linux.
 
 ## Local setup
 
@@ -61,3 +90,26 @@ The frozen selection and split IDs are in [data/task_stream_manifest.json](data/
 ## Research status
 
 The CITB manifests record source commit, task order, checksums, sample IDs, and split leakage checks. The pilot evaluation was corrected and the formal full-parameter continual SFT baseline has been completed. Transformer NAS search remains a separate, not-yet-run experiment.
+
+## Phase 7A：PaRSP 复现与功能保护分析
+
+Phase 7A 已在 Qwen3-0.6B、seed 10、两个 CITB 顺序上完成 C0–C4 pilot，每任务 50 optimizer steps。评价只使用 dev。安装 Linux 环境与准备数据后，在项目旁边保留指定版本的官方代码：
+
+```bash
+git clone https://github.com/JinhuiBot/PaRSP.git ../PaRSP-official
+git -C ../PaRSP-official checkout 00685fe4f9086f03ac1d1a725dcb280714e6125a
+conda run -n transnas python scripts/run_phase7a_pilot.py --mode smoke --sequence S1 --device cuda:0 --smoke-steps 5
+```
+
+S1/S2 可在两个终端分别运行，输出目录互相独立。C4 只在 C1 实际更新审计触发后启用：
+
+```bash
+conda run -n transnas python scripts/run_phase7a_pilot.py --mode pilot --sequence S1 --device cuda:0
+conda run -n transnas python scripts/run_phase7a_pilot.py --mode pilot --sequence S2 --device cuda:1
+conda run -n transnas python scripts/analyze_phase7a.py --sequence both
+conda run -n transnas python scripts/plot_phase7a_results.py
+```
+
+复现说明、真实更新审计、风险/随机回滚对照和获取–保留取舍分别见 [复现报告](reports/phase7a_parsp_reproduction.md)、[约束审计](reports/phase7a_constraint_audit.md)、[功能风险报告](reports/phase7a_functional_importance_vs_preservation.md)及 [Pilot 结果](reports/phase7a_pilot_results.md)。C1 在最终平均分上优于 Full SFT，但 task1603 的新任务获取不足；C4 的严格保护也明显压缩更新空间。结果仍是单 seed 的机制诊断，未启动 NAS。
+
+Git 跟踪 `results/phase7a/` 下的紧凑指标、评价摘要与访问/恢复记录。完整组件测量、逐步审计、模型和边界 checkpoint 保留本地；离线风险分析需要这些本地 checkpoint。

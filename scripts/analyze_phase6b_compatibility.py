@@ -8,14 +8,26 @@ import math
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-P6A = ROOT / "results" / "phase6a"
-OUT = ROOT / "results" / "phase6b"
-FIGURES = ROOT / "figures" / "phase6b"
-REPORT = ROOT / "reports" / "phase6b_compatibility.md"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+try:
+    from .runtime_paths import storage_root
+except ImportError:  # Running this file directly from scripts/.
+    from runtime_paths import storage_root
+
+load_dotenv(ROOT / ".env", override=False)
+STORAGE_ROOT = storage_root(ROOT)
+P6A = storage_path("results") / "phase6a"
+OUT = storage_path("results") / "phase6b"
+FIGURES = storage_path("figures") / "phase6b"
+REPORT = storage_path("reports") / "phase6b_compatibility.md"
 TASKS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",
@@ -24,7 +36,7 @@ TASKS = [
 ]
 LABEL = dict(zip(TASKS, ("565 CIRCA", "1603 SMCalFlow", "1501 DSTC3", "1384 Deal-or-No-Deal")))
 GENERATION = set(TASKS[:2])
-TASK_RELATIONS = Path(r"D:\Task-Aware-TransNAS\data\task_selection\task_relation_analysis.json")
+TASK_RELATIONS = STORAGE_ROOT / "data" / "task_selection" / "task_relation_analysis.json"
 
 
 def _json(path: Path) -> Any:

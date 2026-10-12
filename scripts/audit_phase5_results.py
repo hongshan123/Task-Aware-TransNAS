@@ -12,7 +12,11 @@ from typing import Any
 import torch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RESULT_ROOT = PROJECT_ROOT / "results" / "phase5"
+try:
+    from .phase_paths import storage_path
+except ImportError:  # Running this file directly from scripts/.
+    from phase_paths import storage_path
+RESULT_ROOT = storage_path("results") / "phase5"
 TASKS = [
     "task565_circa_answer_generation",
     "task1603_smcalflow_sentence_generation",
@@ -160,8 +164,8 @@ def main() -> int:
         comparisons = list(csv.DictReader(handle))
     check("paired A1 comparisons", len(comparisons) == 18, f"{len(comparisons)}/18 comparison rows")
 
-    fv_report = PROJECT_ROOT / "reports" / "phase5_fv_analysis.md"
-    a1_report = PROJECT_ROOT / "reports" / "phase5_a1_ablation.md"
+    fv_report = storage_path("reports") / "phase5_fv_analysis.md"
+    a1_report = storage_path("reports") / "phase5_a1_ablation.md"
     for path, required in [
         (fv_report, ["Cross-task FV similarity", "Findings and architecture recommendation"]),
         (a1_report, ["A1-zero-gate", "Paired direct-path metric deltas", "## Conclusion"]),
@@ -169,7 +173,7 @@ def main() -> int:
         text = path.read_text(encoding="utf-8") if path.exists() else ""
         valid = bool(text) and "\ufffd" not in text and all(token in text for token in required)
         check(f"report {path.name}", valid, f"{len(text.splitlines())} lines" if text else "missing")
-    figure_qa_report = PROJECT_ROOT / "reports" / "phase5_figure_qa.md"
+    figure_qa_report = storage_path("reports") / "phase5_figure_qa.md"
     figure_qa_text = figure_qa_report.read_text(encoding="utf-8") if figure_qa_report.exists() else ""
     check(
         "figure QA report",
@@ -179,7 +183,7 @@ def main() -> int:
         f"{len(figure_qa_text.splitlines())} lines" if figure_qa_text else "missing",
     )
 
-    figure_root = PROJECT_ROOT / "figures" / "phase5"
+    figure_root = storage_path("figures") / "phase5"
     figure_stems = [
         "phase5_head_importance_heatmap",
         "phase5_fv_cosine_matrix",
