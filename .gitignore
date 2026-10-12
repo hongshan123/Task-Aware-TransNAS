@@ -51,6 +51,7 @@ results/phase7a/*
 !results/phase7a/phase7a_config.json
 !results/phase7a/pilot_stage_summary.csv
 !results/phase7a/pilot_final_task_metrics.csv
+!results/phase7a/generation_output_diagnostics.csv
 !results/phase7a/functional_importance_preservation_correlations.csv
 !results/phase7a/functional_importance_rollback_controls.csv
 !results/phase7a/functional_importance_preservation_summary.json
